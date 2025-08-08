@@ -39,37 +39,90 @@ def read_log_files(log_files: list[str]) -> list[str]:
 #cette fonction trouve les logs applicatifs dans un répertoire
 def find_app_log_files(root_path: str) -> list[str]:
     log_files = []
-    log_extensions = ['.log', '.txt', '.out', '.err']
-    
-    # Application-specific keywords (excluding web server logs)
-    app_keywords = ['app', 'application', 'exception', 'debug', 'trace', 'laravel']
-    
-    # Web server keywords to exclude
-    web_server_keywords = ['nginx', 'apache', 'httpd', 'access', 'combined', 'ssl', 'error']
-    
-    timestamp_pattern = re.compile(r'\d{4}-\d{2}-\d{2}|\d{2}:\d{2}:\d{2}')  # Simple pattern date/time
+    log_extensions = {'.log', '.txt', '.out', '.err'}
 
-    # Boucle sur les dossiers/fichiers
+    # Application-specific hints
+    app_keywords = {'app', 'application', 'exception', 'debug', 'trace', 'laravel'}
+    app_dirs = {'/logs', '/storage/logs', '/var/log/myapp', '/var/log/app'}
+
+    # Web server hints à exclure
+    web_server_keywords = {'nginx', 'apache', 'httpd', 'access', 'combined', 'ssl'}
+    web_dirs = {'/var/log/nginx', '/var/log/apache2', '/var/log/httpd'}
+
+    # Patterns to detect log-like content
+    timestamp_pattern = re.compile(r'\d{4}-\d{2}-\d{2}|\d{2}:\d{2}:\d{2}')
+    log_level_pattern = re.compile(r'\b(INFO|ERROR|WARN|DEBUG|TRACE|CRITICAL)\b')
+
     for dirpath, _, filenames in os.walk(root_path):
+        dir_lower = dirpath.lower()
+
+        # Skip obvious web server directories
+        if any(wd in dir_lower for wd in web_dirs):
+            continue
+
         for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
             filename_lower = filename.lower()
-            
-            # Skip web server logs
-            if any(web_keyword in filename_lower for web_keyword in web_server_keywords):
+            file_path = os.path.join(dirpath, filename)
+
+            # Skip files that look like web server logs
+            if any(web_kw in filename_lower for web_kw in web_server_keywords):
                 continue
-                
-            # vérifie extension or application keyword in filename
-            if any(filename_lower.endswith(ext) for ext in log_extensions) or \
-               any(keyword in filename_lower for keyword in app_keywords):
+
+            # Check extension or app keyword
+            if not (filename_lower.endswith(tuple(log_extensions)) or
+                    any(kw in filename_lower for kw in app_keywords) or
+                    any(ad in dir_lower for ad in app_dirs)):
+                continue
+
+            # Skip huge files (for safety)
+            try:
+                if os.path.getsize(file_path) > 500_000_000:  # 500MB
+                    continue
+            except OSError:
+                continue
+
+            # Read some lines to check if it looks like a log
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = [next(f, '') for _ in range(10)]
+                    content = ' '.join(lines)
+                    if timestamp_pattern.search(content) or log_level_pattern.search(content):
+                        log_files.append(file_path)
+            except (OSError, StopIteration):
+                continue
+
+    return log_files
+
+# This function finds Nginx log files in a directory
+def find_nginx_log_files(root_path: str) -> list[str]:
+    log_files = []
+    log_extensions = ['.log']
+    nginx_keywords = ['nginx', 'access', 'error', 'ssl', 'combined']
+    nginx_dirs = ['/var/log/nginx', '/usr/local/nginx/logs']
+    timestamp_pattern = re.compile(r'\d{4}-\d{2}-\d{2}|\d{2}:\d{2}:\d{2}')
+
+    for dirpath, _, filenames in os.walk(root_path):
+        dir_lower = dirpath.lower()
+
+        # Skip non-nginx directories unless file matches keywords
+        if not any(nginx_dir in dir_lower for nginx_dir in nginx_dirs):
+            # This allows catching nginx logs even outside the default folder
+            pass
+
+        for filename in filenames:
+            filename_lower = filename.lower()
+            file_path = os.path.join(dirpath, filename)
+
+            # Match nginx logs either by directory or filename keywords
+            if (any(ext for ext in log_extensions if filename_lower.endswith(ext)) and
+                (any(keyword in filename_lower for keyword in nginx_keywords) or
+                 any(nginx_dir in dir_lower for nginx_dir in nginx_dirs))):
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                         first_line = f.readline()
-                        # Check if first line has a timestamp pattern
                         if timestamp_pattern.search(first_line):
                             log_files.append(file_path)
                 except Exception:
-                    # File non lisible ou autre, on ignore
                     continue
     return log_files
 
@@ -89,5 +142,19 @@ def get_app_logs(root_path: str) -> list[dict]:
             'file_path': log_file,
             'content': content,
             'file_size': os.path.getsize(log_file) if os.path.exists(log_file) else 0
+        })
+    return log_data
+
+def get_nginx_logs(root_path: str) -> list[dict]:
+    """Find and read all nginx log files from the given directory"""
+    log_files = find_nginx_log_files(root_path)
+    log_data = []
+    for log_file in log_files:
+        content = read_file(log_file)
+        log_data.append({
+            'file_path' : log_file,
+            'content' : content,
+            'file_size' : os.path.getsize(log_file)
+        if os.path.exists(log_file) else 0
         })
     return log_data

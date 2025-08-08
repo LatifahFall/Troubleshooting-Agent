@@ -1,4 +1,4 @@
-from utils import get_app_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance
+from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance
 from dotenv import load_dotenv
 from openai import OpenAI
 from jinja2 import Template
@@ -17,7 +17,8 @@ function_mappings: dict[str, Callable[..., Any]] = {
     "done_for_now": done_for_now,
     # "find_app_log_files": find_app_log_files,
     # "read_log_files": read_log_files,
-    "get_app_logs": get_app_logs
+    "get_app_logs": get_app_logs,
+    "get_nginx_logs": get_nginx_logs
 }
 
 def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[..., Any]]) -> str:
@@ -29,10 +30,11 @@ def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[...
     capabilities_context = {
         name: {
             "signature": str(signature(func)),
-            "returns": "string" if name in ["read_file", "ask_for_clarification"] else
+            "returns": "string" if name in ["read_file", "ask_for_clarification", "provide_further_assistance"] else
                        "list of strings" if name in ["find_app_log_files", "read_log_files"] else
-                       "list of dicts" if name == "get_app_logs" else
-                       "None"
+                       "list of dicts" if name in ["get_app_logs", "get_nginx_logs"] else
+                       "None" if name in ["done_for_now"] else
+                       "string"
         }
         for name, func in capabilities.items()
     }
@@ -53,14 +55,14 @@ class Interpretation(BaseModel):
         extra = "forbid"  # This prevents additional properties
 
 class Response(BaseModel):
-    part: list[Interpretation]
+    interpretations: list[Interpretation]
 
 messages: list[ChatCompletionMessageParam] = list([
     ChatCompletionSystemMessageParam(content=SYSTEM_PROMPT, role="system"),
 ])
 
 # Initialize a response object to collect all interpretations
-final_response = Response(part=[])
+final_response = Response(interpretations=[])
 
 iteration: int = 0
 max_iterations = 10
@@ -91,7 +93,7 @@ while True and iteration < max_iterations:
         interpretation = Interpretation(**response_dict)
         
         # Add this interpretation to the final response
-        final_response.part.append(interpretation)
+        final_response.interpretations.append(interpretation)
         
         log_type: str = interpretation.log_type
         thoughts: str = interpretation.thoughts
