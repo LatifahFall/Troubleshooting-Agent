@@ -1,0 +1,3 @@
+[2025-08-07 10:25:43] local.ERROR: Undefined variable $user (View: /var/www/html/resources/views/profile.blade.php) {"exception":"[object] (ErrorException(code: 0): Undefined variable $user at /var/www/html/resources/views/profile.blade.php:22)
+[2025-08-07 10:26:01] local.WARNING: Slow database query detected {"time": 1452, "sql": "SELECT * FROM users WHERE email = ?", "bindings": ["test@example.com"]}
+[2025-08-07 10:28:18] local.INFO: User login successful {"user_id": 5, "email": "user@example.com"}

@@ -1,0 +1,21 @@
+[2025-08-07 10:24:00] local.ERROR: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'project.users' doesn't exist (SQL: select * from `users` where `email` = test@example.com limit 1) {"exception":"[object] (Illuminate\Database\QueryException(code: 42S02): SQLSTATE[42S02]: Base table or view not found: 1146 Table 'project.users' doesn't exist at /var/www/html/vendor/laravel/framework/src/Illuminate/Database/Connection.php:712)
+[stacktrace]
+#0 /var/www/html/vendor/laravel/framework/src/Illuminate/Database/Connection.php(672): Illuminate\Database\Connection->runQueryCallback()
+#1 /var/www/html/app/Http/Controllers/Auth/LoginController.php(47): Illuminate\Database\Connection->select()
+#2 {main}
+"}
+[2025-08-07 10:27:00] production.WARNING: Attempt to read property "title" on null {"exception":"[object] (ErrorException(code: 0): Attempt to read property 'title' on null at /var/www/html/resources/views/post.blade.php:12)
+[stacktrace]
+#0 /var/www/html/resources/views/post.blade.php(12): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 {main}
+"}
+[2025-08-07 10:30:00] local.ERROR: Class "App\Http\Controllers\AdminController" not found {"exception":"[object] (Symfony\Component\ErrorHandler\Error\ClassNotFoundError(code: 0): Attempted to load class \"AdminController\" from namespace \"App\\Http\\Controllers\". Did you forget a \"use\" statement? at /var/www/html/routes/web.php:38)
+[stacktrace]
+#0 /var/www/html/vendor/laravel/framework/src/Illuminate/Routing/Route.php(230): Illuminate\Routing\RouteFileRegistrar->register()
+#1 {main}
+"}
+[2025-08-07 10:33:00] production.ERROR: file_put_contents(/storage/logs/custom.log): Failed to open stream: Permission denied {"exception":"[object] (ErrorException(code: 0): file_put_contents(/storage/logs/custom.log): Failed to open stream: Permission denied at /var/www/html/app/Helpers/Logger.php:15)
+[stacktrace]
+#0 /var/www/html/app/Helpers/Logger.php(15): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 {main}
+"}
