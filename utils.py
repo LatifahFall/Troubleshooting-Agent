@@ -262,7 +262,6 @@ def connectivity_check():
     except ValueError:
         return {"status": "error", "message": "PORT must be a number"}
 
-    # Try using telnetlib first
     try:
         tn = telnetlib.Telnet(host, port, timeout=5)
         tn.close()
