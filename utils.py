@@ -96,42 +96,56 @@ def find_app_log_files(root_path: str) -> list[str]:
 # This function finds Nginx log files in a directory
 def find_nginx_log_files(root_path: str) -> list[str]:
     log_files = []
-    log_extensions = ['.log']
-    nginx_keywords = ['nginx', 'access', 'error', 'ssl', 'combined']
-    nginx_dirs = ['/var/log/nginx', '/usr/local/nginx/logs']
+    log_extensions = {'.log'}
+
+    # Mots-clés et dossiers typiques pour nginx
+    nginx_keywords = {'nginx', 'access', 'error', 'ssl', 'combined'}
+    nginx_dirs = {'/var/log/nginx', '/usr/local/nginx/logs'}
+
+    # Patterns pour détecter un log nginx
     timestamp_pattern = re.compile(r'\d{4}-\d{2}-\d{2}|\d{2}:\d{2}:\d{2}')
+    nginx_access_pattern = re.compile(r'^\d{1,3}(?:\.\d{1,3}){3} - - \[.*\]')
 
     for dirpath, _, filenames in os.walk(root_path):
         dir_lower = dirpath.lower()
-
-        # Skip non-nginx directories unless file matches keywords
-        if not any(nginx_dir in dir_lower for nginx_dir in nginx_dirs):
-            # This allows catching nginx logs even outside the default folder
-            pass
 
         for filename in filenames:
             filename_lower = filename.lower()
             file_path = os.path.join(dirpath, filename)
 
-            # Match nginx logs either by directory or filename keywords
-            if (any(ext for ext in log_extensions if filename_lower.endswith(ext)) and
-                (any(keyword in filename_lower for keyword in nginx_keywords) or
-                 any(nginx_dir in dir_lower for nginx_dir in nginx_dirs))):
-                try:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        first_line = f.readline()
-                        if timestamp_pattern.search(first_line):
-                            log_files.append(file_path)
-                except Exception:
+            # Filtrer sur extension et dossier ou mots-clés dans le nom de fichier
+            if not filename_lower.endswith(tuple(log_extensions)):
+                continue
+
+            in_nginx_dir = any(ng_dir in dir_lower for ng_dir in nginx_dirs)
+            has_nginx_keyword = any(kw in filename_lower for kw in nginx_keywords)
+
+            if not (in_nginx_dir or has_nginx_keyword):
+                continue
+
+            # Ignorer les fichiers très gros (> 500MB)
+            try:
+                if os.path.getsize(file_path) > 500_000_000:
                     continue
+            except OSError:
+                continue
+
+            # Lire les 10 premières lignes pour mieux détecter les logs nginx
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = [next(f, '') for _ in range(10)]
+            except (OSError, StopIteration):
+                continue
+
+            content_sample = ' '.join(lines)
+
+            # Valider si c’est un log nginx via pattern d’accès ou timestamp
+            if any(nginx_access_pattern.match(line) for line in lines) or timestamp_pattern.search(content_sample):
+                log_files.append(file_path)
+
     return log_files
 
-# def get_app_logs(root_path: str) -> list[str]:
-#     """Find and read all application log files from the given directory."""
-#     log_files = find_app_log_files(root_path)
-#     return read_log_files(log_files)
-
-#Meilleur d'indiquer dans quel fichier on a trouvé chqaue
+#Meilleur d'indiquer dans quel fichier on a trouvé chqaue log
 def get_app_logs(root_path: str) -> list[dict]:
     """Find and read all application log files from the given directory."""
     log_files = find_app_log_files(root_path)
