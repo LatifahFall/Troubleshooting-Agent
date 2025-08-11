@@ -3,6 +3,8 @@ import re
 import platform
 import psutil
 from dotenv import load_dotenv
+import socket
+import telnetlib
 
 load_dotenv()
 
@@ -247,3 +249,33 @@ def system_check():
         "disk_total_gb": round(psutil.disk_usage('/').total / (1024**3), 2),
         "disk_free_gb": round(psutil.disk_usage('/').free / (1024**3), 2)
     }
+
+def connectivity_check():
+    host = os.getenv("HOST")
+    port = os.getenv("PORT")
+
+    if not host or not port:
+        return {"status": "error", "message": "Missing HOST or PORT environment variables"}
+
+    try:
+        port = int(port)
+    except ValueError:
+        return {"status": "error", "message": "PORT must be a number"}
+
+    # Try using telnetlib first
+    try:
+        tn = telnetlib.Telnet(host, port, timeout=5)
+        tn.close()
+        return {"status": "success", "message": f"Telnet connection to {host}:{port} succeeded"}
+    except Exception as telnet_error:
+        # Fallback: essayer socket connection
+        try:
+            with socket.create_connection((host, port), timeout=5):
+                return {"status": "success", "message": f"Socket connection to {host}:{port} succeeded (Telnet failed)"}
+        except Exception as socket_error:
+            return {
+                "status": "error",
+                "message": f"Connection to {host}:{port} failed",
+                "telnet_error": str(telnet_error),
+                "socket_error": str(socket_error)
+            }
