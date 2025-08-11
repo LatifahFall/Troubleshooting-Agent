@@ -134,9 +134,17 @@ while True and iteration < max_iterations:
                 messages = [messages[0]] + messages[-(max_messages-1):]
 
             if intent == "done_for_now":
-                # Print the final response with all interpretations
+                # Extract and display the diagnosis message prominently
+                diagnosis_message = args.get("message", "No diagnosis message found")
+                print("\n" + "="*80)
+                print("FINAL DIAGNOSIS AND TROUBLESHOOTING STEPS:")
+                print("="*80)
+                print(diagnosis_message)
+                print("="*80)
+                
+                # Print the complete final response with all interpretations
                 print("\n" + "="*50)
-                print("Final response:")
+                print("COMPLETE ANALYSIS LOG:")
                 print("="*50)
                 print(json.dumps(final_response.model_dump(), ensure_ascii=False, indent=2))
                 break
