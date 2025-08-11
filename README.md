@@ -1,4 +1,4 @@
-# Tetra - Advanced Web Application Troubleshooting Agent
+# Tetra - Web Application Troubleshooting Agent
 
 Tetra is an intelligent troubleshooting assistant developed to help identify, diagnose, and resolve errors or incidents affecting web applications. It systematically analyzes application logs and nginx server logs to provide actionable diagnosis and step-by-step troubleshooting instructions.
 
