@@ -1,4 +1,4 @@
-from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance, provide_diagnosis, get_working_directory, get_app_log_directory, get_nginx_log_directory
+from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance, provide_diagnosis, get_app_log_directory, get_nginx_log_directory, system_check
 from dotenv import load_dotenv
 from openai import OpenAI
 from jinja2 import Template
@@ -20,9 +20,9 @@ function_mappings: dict[str, Callable[..., Any]] = {
     # "read_log_files": read_log_files,
     "get_app_logs": get_app_logs,
     "get_nginx_logs": get_nginx_logs,
-    "get_working_directory": get_working_directory,
     "get_app_log_directory": get_app_log_directory,
-    "get_nginx_log_directory": get_nginx_log_directory
+    "get_nginx_log_directory": get_nginx_log_directory,
+    "system_check": system_check
 }
 
 def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[..., Any]]) -> str:
@@ -70,7 +70,7 @@ final_response = Response(interpretations=[])
 
 iteration: int = 0
 max_iterations = 10
-max_messages = 20  # Keep only last 20 messages to prevent memory issues
+max_messages = 20  # Keeping only last 20 messages to prevent memory issues
 
 while True and iteration < max_iterations:
     iteration += 1

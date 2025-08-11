@@ -20,3 +20,4 @@ typing-inspection==0.4.1
 typing_extensions==4.14.1
 python-dotenv
 jinja2
+psutil

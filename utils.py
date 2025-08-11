@@ -1,83 +1,10 @@
 import os
 import re
-# Configuration for log directories
-APP_LOG_DIRS = [
-    './storage/logs',        # Laravel logs
-    './logs',               # Custom app logs
-    './chemin'              # current sample directory
-]
+import platform
+import psutil
+from dotenv import load_dotenv
 
-NGINX_LOG_DIRS = [
-    '/var/log/nginx',       # Standard nginx location
-    '/var/log'              # System logs (includes nginx)
-]
-
-def get_app_log_directory() -> str:
-    """
-    Get the directory to search for application logs.
-    Priority: ENV variable > common app dirs > current dir
-    """
-    # 1. Environment variable (highest priority)
-    env_log_dir = os.getenv('APP_LOG_DIR')
-    if env_log_dir and os.path.exists(env_log_dir):
-        return env_log_dir
-    
-    # 2. Check common app log directories
-    for log_dir in APP_LOG_DIRS:
-        if os.path.exists(log_dir):
-            return log_dir
-    
-    # 3. Fallback to current directory
-    return "."
-
-def get_nginx_log_directory() -> str:
-    """
-    Get the directory to search for nginx logs.
-    Priority: ENV variable > common nginx dirs > current dir
-    """
-    # 1. Environment variable (highest priority)
-    env_log_dir = os.getenv('NGINX_LOG_DIR')
-    if env_log_dir and os.path.exists(env_log_dir):
-        return env_log_dir
-    
-    # 2. Check common nginx log directories
-    for log_dir in NGINX_LOG_DIRS:
-        if os.path.exists(log_dir):
-            return log_dir
-    
-    # 3. Fallback to current directory
-    return "."
-
-def get_working_directory() -> str:
-    """
-    Get the working directory for log analysis.
-    Priority: ENV variable > current directory > fallback
-    """
-    # Check for environment variable first
-    log_dir = os.getenv('TETRA_LOG_DIR')
-    if log_dir and os.path.exists(log_dir):
-        return log_dir
-    
-    # Check for common log directories
-    common_log_dirs = [
-        '/var/log',
-        '/var/log/nginx',
-        '/var/log/apache2',
-        '/var/log/httpd',
-        '/var/www/html/logs',
-        './logs',
-        './storage/logs',
-        './chemin'
-    ]
-    
-    for log_dir in common_log_dirs:
-        if os.path.exists(log_dir):
-            return log_dir
-    
-    # Fallback to current directory
-    return "."
-
-
+load_dotenv()
 
 def read_file(path: str) -> str:
     try:
@@ -111,6 +38,58 @@ def done_for_now(message: str) -> None:
     print(f"\n{'*' * 20}")
     print(f"\n{message}")
     print(f"\n{'*' * 20}")
+    
+# Configuration for log directories
+APP_LOG_DIRS = [
+    './storage/logs',        # Laravel logs
+    './logs',               # Custom app logs
+    './chemin'              # current sample directory
+]
+
+NGINX_LOG_DIRS = [
+    '/var/log/nginx',       # Standard nginx location
+    '/var/log'              # System logs (includes nginx)
+]
+
+#cette fonction est utilisée pour trouver le répertoire de travail
+#pour l'analyse des logs applicatifs
+def get_app_log_directory() -> str:
+    """
+    Get the directory to search for application logs.
+    Priority: ENV variable > common app dirs > current dir
+    """
+    # 1. Environment variable (highest priority)
+    env_log_dir = os.getenv('APP_LOG_DIR')
+    if env_log_dir and os.path.exists(env_log_dir):
+        return env_log_dir
+    
+    # 2. Check common app log directories
+    for log_dir in APP_LOG_DIRS:
+        if os.path.exists(log_dir):
+            return log_dir
+    
+    # 3. Fallback to current directory
+    return "."
+
+#cette fonction est utilisée pour trouver le répertoire de travail
+#pour l'analyse des logs nginx
+def get_nginx_log_directory() -> str:
+    """
+    Get the directory to search for nginx logs.
+    Priority: ENV variable > common nginx dirs > current dir
+    """
+    # 1. Environment variable (highest priority)
+    env_log_dir = os.getenv('NGINX_LOG_DIR')
+    if env_log_dir and os.path.exists(env_log_dir):
+        return env_log_dir
+    
+    # 2. Check common nginx log directories
+    for log_dir in NGINX_LOG_DIRS:
+        if os.path.exists(log_dir):
+            return log_dir
+    
+    # 3. Fallback to current directory
+    return "."
 
 #fonction que j'utiliserai à la fois pour les logs applicatifs et ceux du serveur web
 #pour lire et stocker dans une variable le contenu des fichiers trouvés
@@ -257,3 +236,14 @@ def get_nginx_logs(root_path: str) -> list[dict]:
         if os.path.exists(log_file) else 0
         })
     return log_data
+
+def system_check():
+    return {
+        "os": platform.system(),
+        "os_version": platform.version(),
+        "cpu_count": psutil.cpu_count(logical=True),
+        "memory_total_gb": round(psutil.virtual_memory().total / (1024**3), 2),
+        "memory_available_gb": round(psutil.virtual_memory().available / (1024**3), 2),
+        "disk_total_gb": round(psutil.disk_usage('/').total / (1024**3), 2),
+        "disk_free_gb": round(psutil.disk_usage('/').free / (1024**3), 2)
+    }
