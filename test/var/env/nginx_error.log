@@ -1,0 +1,19 @@
+2024/01/15 10:30:15 [error] 1234#0: *5678 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.1.100, server: example.com, request: "GET /api/users HTTP/1.1", upstream: "http://127.0.0.1:8000/api/users", host: "example.com"
+
+2024/01/15 10:30:16 [error] 1234#0: *5679 SSL_do_handshake() failed (SSL: error:14094416:SSL routines:ssl3_read_bytes:sslv3 alert certificate unknown) while SSL handshaking, client: 192.168.1.101, server: example.com, request: "GET /secure HTTP/1.1", host: "example.com"
+
+2024/01/15 10:30:17 [error] 1234#0: *5680 upstream timed out (110: Connection timed out) while connecting to upstream, client: 192.168.1.102, server: example.com, request: "POST /api/upload HTTP/1.1", upstream: "http://127.0.0.1:8000/api/upload", host: "example.com"
+
+2024/01/15 10:30:18 [error] 1234#0: *5681 open() "/var/www/html/public/css/style.css" failed (2: No such file or directory), client: 192.168.1.103, server: example.com, request: "GET /css/style.css HTTP/1.1", host: "example.com"
+
+2024/01/15 10:30:19 [error] 1234#0: *5682 upstream sent too big header while reading response header from upstream, client: 192.168.1.104, server: example.com, request: "GET /api/data HTTP/1.1", upstream: "http://127.0.0.1:8000/api/data", host: "example.com"
+
+2024/01/15 10:30:20 [error] 1234#0: *5683 recv() failed (104: Connection reset by peer) while reading response header from upstream, client: 192.168.1.105, server: example.com, request: "GET /api/status HTTP/1.1", upstream: "http://127.0.0.1:8000/api/status", host: "example.com"
+
+2024/01/15 10:30:21 [error] 1234#0: *5684 upstream sent invalid chunked transfer encoding response while reading upstream, client: 192.168.1.106, server: example.com, request: "GET /api/download HTTP/1.1", upstream: "http://127.0.0.1:8000/api/download", host: "example.com"
+
+2024/01/15 10:30:22 [error] 1234#0: *5685 upstream prematurely closed connection while reading response header from upstream, client: 192.168.1.107, server: example.com, request: "POST /api/submit HTTP/1.1", upstream: "http://127.0.0.1:8000/api/submit", host: "example.com"
+
+2024/01/15 10:30:23 [error] 1234#0: *5686 SSL_do_handshake() failed (SSL: error:1408A0C1:SSL routines:ssl3_get_client_hello:no shared cipher) while SSL handshaking, client: 192.168.1.108, server: example.com, request: "GET /secure/login HTTP/1.1", host: "example.com"
+
+2024/01/15 10:30:24 [error] 1234#0: *5687 upstream sent no valid HTTP/1.0 header while reading response header from upstream, client: 192.168.1.109, server: example.com, request: "GET /api/health HTTP/1.1", upstream: "http://127.0.0.1:8000/api/health", host: "example.com"

@@ -1,0 +1,19 @@
+[2024-01-15 10:30:15] local.ERROR: Database connection failed: SQLSTATE[HY000] [2002] Connection refused {"exception":"[object] (Illuminate\\Database\\QueryException(code: 2002): SQLSTATE[HY000] [2002] Connection refused at /var/www/html/vendor/laravel/framework/src/Illuminate/Database/Connectors/Connector.php:70)
+
+[2024-01-15 10:30:16] local.ERROR: Missing environment variable: APP_KEY not set {"exception":"[object] (RuntimeException(code: 0): The application key has not been set. at /var/www/html/bootstrap/app.php:45)
+
+[2024-01-15 10:30:17] local.ERROR: File permission denied: Cannot write to storage/logs directory {"exception":"[object] (ErrorException(code: 0): file_put_contents(): failed to open stream: Permission denied at /var/www/html/storage/logs/laravel.log:123)
+
+[2024-01-15 10:30:18] local.ERROR: Class 'App\\Http\\Controllers\\UserController' not found {"exception":"[object] (ReflectionException(code: -1): Class App\\Http\\Controllers\\UserController does not exist at /var/www/html/vendor/laravel/framework/src/Illuminate/Routing/Route.php:234)
+
+[2024-01-15 10:30:19] local.ERROR: SSL certificate validation failed: unable to get local issuer certificate {"exception":"[object] (GuzzleHttp\\Exception\\RequestException(code: 0): cURL error 60: SSL certificate problem: unable to get local issuer certificate at /var/www/html/vendor/guzzlehttp/guzzle/src/Client.php:89)
+
+[2024-01-15 10:30:20] local.ERROR: Redis connection timeout: Connection to Redis server at 127.0.0.1:6379 failed {"exception":"[object] (Predis\\Connection\\ConnectionException(code: 0): Connection to Redis server at 127.0.0.1:6379 failed at /var/www/html/vendor/predis/predis/src/Connection/AbstractConnection.php:156)
+
+[2024-01-15 10:30:21] local.ERROR: Queue worker failed: Maximum execution time of 30 seconds exceeded {"exception":"[object] (Symfony\\Component\\Process\\Exception\\ProcessTimedOutException(code: 0): The process \"php artisan queue:work\" exceeded the timeout of 30 seconds at /var/www/html/vendor/symfony/process/Process.php:456)
+
+[2024-01-15 10:30:22] local.ERROR: Mail configuration error: SMTP connection failed to smtp.gmail.com:587 {"exception":"[object] (Swift_TransportException(code: 0): Connection to smtp.gmail.com:587 failed at /var/www/html/vendor/swiftmailer/swiftmailer/lib/classes/Swift/Transport/StreamBuffer.php:267)
+
+[2024-01-15 10:30:23] local.ERROR: Cache directory not writable: /var/www/html/storage/framework/cache {"exception":"[object] (ErrorException(code: 0): mkdir(): Permission denied at /var/www/html/storage/framework/cache:45)
+
+[2024-01-15 10:30:24] local.ERROR: Session configuration error: Session driver 'redis' not available {"exception":"[object] (InvalidArgumentException(code: 0): Session driver [redis] is not available at /var/www/html/vendor/laravel/framework/src/Illuminate/Session/SessionManager.php:123)

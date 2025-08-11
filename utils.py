@@ -1,5 +1,47 @@
 import os
 import re
+from config import Config
+
+def get_working_directory() -> str:
+    """
+    Get the working directory for log analysis.
+    Priority: ENV variable > current directory > fallback
+    """
+    # Check for environment variable first
+    log_dir = os.getenv('TETRA_LOG_DIR')
+    if log_dir and os.path.exists(log_dir):
+        return log_dir
+    
+    # Check for common log directories
+    common_log_dirs = [
+        '/var/log',
+        '/var/log/nginx',
+        '/var/log/apache2',
+        '/var/log/httpd',
+        '/var/www/html/logs',
+        './logs',
+        './storage/logs',
+        './chemin'
+    ]
+    
+    for log_dir in common_log_dirs:
+        if os.path.exists(log_dir):
+            return log_dir
+    
+    # Fallback to current directory
+    return "."
+
+def get_app_working_directory() -> str:
+    """
+    Get the working directory for application log analysis.
+    """
+    return Config.get_app_log_directory()
+
+def get_nginx_working_directory() -> str:
+    """
+    Get the working directory for nginx log analysis.
+    """
+    return Config.get_nginx_log_directory()
 
 def read_file(path: str) -> str:
     try:

@@ -67,6 +67,39 @@ The agent follows a mandatory workflow:
 4. **Further Assistance**: Offers additional help and clarification if needed
 5. **Final Report**: Displays the complete diagnosis prominently with all troubleshooting instructions
 
+### Directory Configuration
+
+Tetra automatically searches for different types of logs in their typical locations:
+
+**Application Logs** (Laravel, PHP, etc.):
+1. **Environment Variable**: `APP_LOG_DIR` (if set)
+2. **Common App Directories**: `./storage/logs`, `./logs`, etc. (if they exist)
+3. **Current Directory**: `"."` (fallback)
+
+**Nginx Logs** (Web server):
+1. **Environment Variable**: `NGINX_LOG_DIR` (if set)
+2. **Common Nginx Directories**: `/var/log/nginx`, `/var/log`, etc. (if they exist)
+3. **Current Directory**: `"."` (fallback)
+
+**Examples:**
+```bash
+# Search in current directory (default)
+python main.py
+
+# Search app logs in specific directory
+export APP_LOG_DIR="./storage/logs"
+python main.py
+
+# Search nginx logs in system directory
+export NGINX_LOG_DIR="/var/log/nginx"
+python main.py
+
+# Search both types in different locations
+export APP_LOG_DIR="./chemin"
+export NGINX_LOG_DIR="/var/log"
+python main.py
+```
+
 ### What the Agent Analyzes
 
 **Application Logs**:

@@ -1,4 +1,4 @@
-from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance
+from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance, get_working_directory, get_app_working_directory, get_nginx_working_directory
 from dotenv import load_dotenv
 from openai import OpenAI
 from jinja2 import Template
@@ -18,7 +18,10 @@ function_mappings: dict[str, Callable[..., Any]] = {
     # "find_app_log_files": find_app_log_files,
     # "read_log_files": read_log_files,
     "get_app_logs": get_app_logs,
-    "get_nginx_logs": get_nginx_logs
+    "get_nginx_logs": get_nginx_logs,
+    "get_working_directory": get_working_directory,
+    "get_app_working_directory": get_app_working_directory,
+    "get_nginx_working_directory": get_nginx_working_directory
 }
 
 def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[..., Any]]) -> str:
