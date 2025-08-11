@@ -43,7 +43,7 @@ Tetra is an intelligent troubleshooting assistant developed to help identify, di
 Troubleshooting Agent/
 ├── main.py              # Main application entry point with OpenAI integration
 ├── utils.py             # Utility functions for log analysis and file operations
-├── config.py            # Configuration management for log directories
+
 ├── system_prompt.j2     # Jinja2 template for dynamic system prompt generation
 ├── requirements.txt     # Python dependencies
 ├── README.md           # This documentation file
@@ -170,7 +170,7 @@ The agent's behavior is controlled by the `system_prompt.j2` template. You can m
 
 ### Configuration Management
 
-The `config.py` file manages log directory discovery with the following priorities:
+Log directory discovery is managed directly in `utils.py` with the following priorities:
 
 1. **Environment Variables**: Highest priority for custom paths
 2. **Common Directories**: Predefined paths for typical installations
@@ -193,8 +193,8 @@ The agent automatically discovers log files by:
 - `read_file(path)`: Reads specific file content for detailed analysis
 
 ### Directory Functions
-- `get_app_working_directory()`: Gets the directory for application log analysis
-- `get_nginx_working_directory()`: Gets the directory for nginx log analysis
+- `get_app_log_directory()`: Gets the directory for application log analysis
+- `get_nginx_log_directory()`: Gets the directory for nginx log analysis
 
 ### Interactive Functions
 - `ask_for_clarification(message)`: Requests user input for clarification when needed
@@ -242,15 +242,6 @@ Key dependencies include:
 - `python-dotenv==1.1.1`: Environment variable management
 - `jinja2`: Template engine for dynamic prompt generation
 - `mypy==1.17.1`: Type checking support
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly with various log file types
-5. Ensure JSON response format compliance
-6. Submit a pull request
 
 ## 🙏 Acknowledgments
 

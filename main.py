@@ -1,4 +1,4 @@
-from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance, get_working_directory, get_app_working_directory, get_nginx_working_directory
+from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance, provide_diagnosis, get_working_directory, get_app_log_directory, get_nginx_log_directory
 from dotenv import load_dotenv
 from openai import OpenAI
 from jinja2 import Template
@@ -14,14 +14,15 @@ function_mappings: dict[str, Callable[..., Any]] = {
     "read_file": read_file,
     "ask_for_clarification": ask_for_clarification,
     "provide_further_assistance": provide_further_assistance,
+    "provide_diagnosis": provide_diagnosis,
     "done_for_now": done_for_now,
     # "find_app_log_files": find_app_log_files,
     # "read_log_files": read_log_files,
     "get_app_logs": get_app_logs,
     "get_nginx_logs": get_nginx_logs,
     "get_working_directory": get_working_directory,
-    "get_app_working_directory": get_app_working_directory,
-    "get_nginx_working_directory": get_nginx_working_directory
+    "get_app_log_directory": get_app_log_directory,
+    "get_nginx_log_directory": get_nginx_log_directory
 }
 
 def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[..., Any]]) -> str:
@@ -137,12 +138,12 @@ while True and iteration < max_iterations:
                 messages = [messages[0]] + messages[-(max_messages-1):]
 
             if intent == "done_for_now":
-                # Extract and display the diagnosis message prominently
-                diagnosis_message = args.get("message", "No diagnosis message found")
+                # Extract and display the termination message
+                termination_message = args.get("message", "No termination message found")
                 print("\n" + "="*80)
-                print("FINAL DIAGNOSIS AND TROUBLESHOOTING STEPS:")
+                print("ANALYSIS COMPLETE")
                 print("="*80)
-                print(diagnosis_message)
+                print(termination_message)
                 print("="*80)
                 
                 # Print the complete final response with all interpretations

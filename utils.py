@@ -1,6 +1,52 @@
 import os
 import re
-from config import Config
+# Configuration for log directories
+APP_LOG_DIRS = [
+    './storage/logs',        # Laravel logs
+    './logs',               # Custom app logs
+    './chemin'              # current sample directory
+]
+
+NGINX_LOG_DIRS = [
+    '/var/log/nginx',       # Standard nginx location
+    '/var/log'              # System logs (includes nginx)
+]
+
+def get_app_log_directory() -> str:
+    """
+    Get the directory to search for application logs.
+    Priority: ENV variable > common app dirs > current dir
+    """
+    # 1. Environment variable (highest priority)
+    env_log_dir = os.getenv('APP_LOG_DIR')
+    if env_log_dir and os.path.exists(env_log_dir):
+        return env_log_dir
+    
+    # 2. Check common app log directories
+    for log_dir in APP_LOG_DIRS:
+        if os.path.exists(log_dir):
+            return log_dir
+    
+    # 3. Fallback to current directory
+    return "."
+
+def get_nginx_log_directory() -> str:
+    """
+    Get the directory to search for nginx logs.
+    Priority: ENV variable > common nginx dirs > current dir
+    """
+    # 1. Environment variable (highest priority)
+    env_log_dir = os.getenv('NGINX_LOG_DIR')
+    if env_log_dir and os.path.exists(env_log_dir):
+        return env_log_dir
+    
+    # 2. Check common nginx log directories
+    for log_dir in NGINX_LOG_DIRS:
+        if os.path.exists(log_dir):
+            return log_dir
+    
+    # 3. Fallback to current directory
+    return "."
 
 def get_working_directory() -> str:
     """
@@ -31,17 +77,7 @@ def get_working_directory() -> str:
     # Fallback to current directory
     return "."
 
-def get_app_working_directory() -> str:
-    """
-    Get the working directory for application log analysis.
-    """
-    return Config.get_app_log_directory()
 
-def get_nginx_working_directory() -> str:
-    """
-    Get the working directory for nginx log analysis.
-    """
-    return Config.get_nginx_log_directory()
 
 def read_file(path: str) -> str:
     try:
@@ -63,6 +99,13 @@ def provide_further_assistance(message: str) -> str:
     print("NEED MORE ASSISTANCE ?")
     response: str = input(f"\n{message}\nResponse: ")
     return response
+
+def provide_diagnosis(message: str) -> str:
+    print(f"\n{'*' * 20}")
+    print("DIAGNOSIS PROVIDED")
+    print(f"\n{message}")
+    print(f"\n{'*' * 20}")
+    return "Diagnosis provided successfully"
 
 def done_for_now(message: str) -> None:
     print(f"\n{'*' * 20}")
