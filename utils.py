@@ -239,16 +239,48 @@ def get_nginx_logs(root_path: str) -> list[dict]:
         })
     return log_data
 
+class SystemStatus:
+    def __init__(self):
+        self.memory = psutil.virtual_memory()
+        self.disk = psutil.disk_usage('/')
+        self.cpu_count = psutil.cpu_count(logical=True)
+        
+    def get_memory_usage_percent(self):
+        return round(self.memory.percent, 2)
+    
+    def get_disk_usage_percent(self):
+        return round(((self.disk.total - self.disk.free) / self.disk.total) * 100, 2)
+    
+    def get_memory_available_percent(self):
+        return round((self.memory.available / self.memory.total) * 100, 2)
+    
+    def get_disk_free_percent(self):
+        return round((self.disk.free / self.disk.total) * 100, 2)
+    
+    def to_dict(self):
+        return {
+            "os": platform.system(),
+            "os_version": platform.version(),
+            "cpu_count": self.cpu_count,
+            "memory": {
+                "total_gb": round(self.memory.total / (1024**3), 2),
+                "available_gb": round(self.memory.available / (1024**3), 2),
+                "used_gb": round((self.memory.total - self.memory.available) / (1024**3), 2),
+                "usage_percent": self.get_memory_usage_percent(),
+                "available_percent": self.get_memory_available_percent()
+            },
+            "disk": {
+                "total_gb": round(self.disk.total / (1024**3), 2),
+                "free_gb": round(self.disk.free / (1024**3), 2),
+                "used_gb": round((self.disk.total - self.disk.free) / (1024**3), 2),
+                "usage_percent": self.get_disk_usage_percent(),
+                "free_percent": self.get_disk_free_percent()
+            }
+        }
+
 def system_check():
-    return {
-        "os": platform.system(),
-        "os_version": platform.version(),
-        "cpu_count": psutil.cpu_count(logical=True),
-        "memory_total_gb": round(psutil.virtual_memory().total / (1024**3), 2),
-        "memory_available_gb": round(psutil.virtual_memory().available / (1024**3), 2),
-        "disk_total_gb": round(psutil.disk_usage('/').total / (1024**3), 2),
-        "disk_free_gb": round(psutil.disk_usage('/').free / (1024**3), 2)
-    }
+    status = SystemStatus()
+    return status.to_dict()
 
 def connectivity_check():
     host = os.getenv("HOST")
