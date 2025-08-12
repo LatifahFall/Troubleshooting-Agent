@@ -46,7 +46,7 @@ def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[...
 
     return template.render(capabilities=capabilities_context)
 
-SYSTEM_PROMPT = load_dynamic_prompt("system_prompt.j2", function_mappings)
+SYSTEM_PROMPT = load_dynamic_prompt("system_prompt_short.j2", function_mappings)
 
 client = OpenAI()
 
@@ -70,17 +70,20 @@ messages: list[ChatCompletionMessageParam] = list([
 final_response = Response(interpretations=[])
 
 iteration: int = 0
-max_iterations = 10
-max_messages = 20  # Keeping only last 20 messages to prevent memory issues
+max_iterations = 50
+max_messages = 35  # Keeping only last 35 messages to prevent memory issues
 
 while True and iteration < max_iterations:
     iteration += 1
+    print(f"\n--- Iteration {iteration} ---")
+    print(f"Current message count: {len(messages)}")
 
     try:
         completion = client.chat.completions.create(
-            model="gpt-4.1",
+            model="gpt-4-1106-preview",
             messages=messages,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
+            temperature=1.2
         )
     except Exception as e:
         print(f"Erreur lors de l'appel à OpenAI: {e}")
@@ -125,14 +128,23 @@ while True and iteration < max_iterations:
             result = function(**args)
             print(f"Function result: {result}")
 
-            # Pushing the function call result to the messages array
-            messages.append(ChatCompletionAssistantMessageParam(
-                role="assistant",
-                content=str({
-                    "intent": f"{intent}_result",
-                    "observation": result,
-                })
-            ))
+            # For user input functions, add the user's response as a user message
+            if intent in ["ask_for_clarification", "provide_further_assistance"]:
+                print(f"Adding user response to conversation: {result}")
+                messages.append(ChatCompletionUserMessageParam(
+                    role="user",
+                    content=result
+                ))
+            else:
+                # For other functions, add the result as an assistant message
+                print(f"Adding function result to conversation: {result}")
+                messages.append(ChatCompletionAssistantMessageParam(
+                    role="assistant",
+                    content=str({
+                        "intent": f"{intent}_result",
+                        "observation": result,
+                    })
+                ))
             
             # Clean up messages after function result too
             if len(messages) > max_messages:
