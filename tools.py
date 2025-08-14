@@ -91,11 +91,7 @@ class DoneForNow(BaseTool):
     message: str = Field(...,description="The message to show to the user to indicate that the conversation is over")
     
     def execute(self, message: str) -> str:
-        print(f"\n{'*' * 20}")
-        print("ANALYSIS COMPLETE")
-        print(f"\n{message}")
-        print(f"\n{'*' * 20}")
-        return f"Analysis completed: {message}"
+        return f"{message}"
 
 # System Tools
 class SystemInfo(BaseModel):

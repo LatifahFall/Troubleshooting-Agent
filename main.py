@@ -39,20 +39,22 @@ def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[...
 
 SYSTEM_PROMPT = load_dynamic_prompt("system_prompt_short.j2", function_mappings)
 
-print(SYSTEM_PROMPT)
+# print(SYSTEM_PROMPT)
 
 client = OpenAI()
+
+class Action(BaseModel):
+    type: str
+    parameters:Union[ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow, SystemCheck, ConnectivityCheck]
+ 
+    model_config = ConfigDict(extra="forbid")
 
 class Interpretation(BaseModel):
     log_type: str
     thoughts: str
-    intent: str
-    args: Union[ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow, SystemCheck, ConnectivityCheck]
+    action: Action
 
     model_config = ConfigDict(extra="forbid")
-    
-    #class Config:
-    #    extra = "forbid"  # This prevents additional properties
 
 class Response(BaseModel):
     interpretations: list[Interpretation]
@@ -80,8 +82,6 @@ while True and iteration < max_iterations:
         completion = client.chat.completions.parse(
             model="gpt-4.1",
             messages=messages,
-            # response_format={"type": "json_object"},
-            #put my structured output here
             temperature=0.7,
             response_format=Interpretation
         )
@@ -107,8 +107,8 @@ while True and iteration < max_iterations:
         
         log_type: str = interpretation.log_type
         thoughts: str = interpretation.thoughts
-        intent: str = interpretation.intent
-        args: dict[str, Any] = interpretation.args.model_dump()
+        action_type: str = interpretation.action.type
+        action_params: dict[str, Any] = interpretation.action.parameters.model_dump()
 
         messages.append(
             ChatCompletionAssistantMessageParam(
@@ -122,30 +122,40 @@ while True and iteration < max_iterations:
             # Keep system message and last max_messages-1 messages
             messages = [messages[0]] + messages[-(max_messages-1):]
 
-        # not printing individual interpretations, only print final response at the end
-        # print(json.dumps(interpretation.model_dump(), ensure_ascii=False, indent=2))
+        # DEBUGGING: printing individual interpretations
+        print(json.dumps(interpretation.model_dump(), ensure_ascii=False, indent=2))
         print("-" * 25)
 
-        if intent in function_mappings:
-            function = function_mappings[intent]
-            result = function(**args)
-            print(f"Function result: {result}")
-            print(f"Intent: {intent}")
+        if action_type in function_mappings:
+            function = function_mappings[action_type]
+            result = function(**action_params)
+            # print(f"Function result: {result}")
+            # print(f"Action: {action_type}")
 
             # For user input functions, add the user's response as a user message
-            if intent in ["ask_for_clarification", "provide_further_assistance"]:
-                print(f"Adding user response to conversation: {result}")
+            if action_type in ["ask_for_clarification", "provide_further_assistance"]:
+                print(f"{result}")
                 messages.append(ChatCompletionUserMessageParam(
                     role="user",
                     content=result
                 ))
-            else:
-                # For other functions, add the result as an assistant message
-                print(f"Adding function result to conversation: {result}")
+            # dont wanna print the result of the read_file function
+            if action_type == "read_file":
+                print(f"FILE READ SUCCESSFULLY")
                 messages.append(ChatCompletionAssistantMessageParam(
                     role="assistant",
                     content=str({
-                        "intent": f"{intent}_result",
+                        "action": f"{action_type}_result",
+                        "observation": result,
+                    })
+                ))
+            else:
+                # For other functions, add the result as an assistant message
+                print(f"{result}")
+                messages.append(ChatCompletionAssistantMessageParam(
+                    role="assistant",
+                    content=str({
+                        "action": f"{action_type}_result",
                         "observation": result,
                     })
                 ))
@@ -154,7 +164,19 @@ while True and iteration < max_iterations:
             if len(messages) > max_messages:
                 messages = [messages[0]] + messages[-(max_messages-1):]
 
-            if intent == "done_for_now":
+            if action_type == "done_for_now":
+                # Print the complete final response with all interpretations FIRST
+                print("\n" + "="*50)
+                print("COMPLETE ANALYSIS LOG:")
+                print("="*50)
+                print(json.dumps(final_response.model_dump(), ensure_ascii=False, indent=2))
+                
+                # THEN show the completion message from the function result
+                print(f"\n{'*' * 20}")
+                print("ANALYSIS COMPLETE")
+                print(f"\n{result}")
+                print(f"\n{'*' * 20}")
+                
                 # Save conversation to memory
                 # try:
                 #     print(f"\n💾 Saving conversation to memory...")
@@ -165,14 +187,9 @@ while True and iteration < max_iterations:
                 #     import traceback
                 #     traceback.print_exc()
                 
-                # Print the complete final response with all interpretations
-                print("\n" + "="*50)
-                print("COMPLETE ANALYSIS LOG:")
-                print("="*50)
-                print(json.dumps(final_response.model_dump(), ensure_ascii=False, indent=2))
                 break
         else:
-            raise ValueError("Invalid intent")
+            raise ValueError("Invalid action type")
 
 
     except ValidationError as e:
