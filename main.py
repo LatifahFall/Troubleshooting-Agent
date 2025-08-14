@@ -1,29 +1,22 @@
-from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, done_for_now, provide_further_assistance, provide_diagnosis, get_app_log_directory, get_nginx_log_directory, system_check, connectivity_check
+from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, provide_further_assistance, provide_diagnosis, get_app_log_directory, get_nginx_log_directory, system_check, connectivity_check, get_app_history
+from memory_manager import MemoryManager
 from dotenv import load_dotenv
 from openai import OpenAI
 from jinja2 import Template
-from typing import Any, Callable
-from pydantic import BaseModel, ValidationError
+from typing import Any, Callable, Dict, Optional, Union
+from pydantic import BaseModel, ValidationError, ConfigDict
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMessageParam, \
     ChatCompletionUserMessageParam, ChatCompletionAssistantMessageParam
 import json
+from tools import ToolFactory, ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow
 
 load_dotenv()
 
+tool_factory = ToolFactory()
+tool_mappings = tool_factory.create_function_mappings()
+
 function_mappings: dict[str, Callable[..., Any]] = {
-    "read_file": read_file,
-    "ask_for_clarification": ask_for_clarification,
-    "provide_further_assistance": provide_further_assistance,
-    "provide_diagnosis": provide_diagnosis,
-    "done_for_now": done_for_now,
-    # "find_app_log_files": find_app_log_files,
-    # "read_log_files": read_log_files,
-    "get_app_logs": get_app_logs,
-    "get_nginx_logs": get_nginx_logs,
-    "get_app_log_directory": get_app_log_directory,
-    "get_nginx_log_directory": get_nginx_log_directory,
-    "system_check": system_check,
-    "connectivity_check": connectivity_check
+    **tool_mappings
 }
 
 def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[..., Any]]) -> str:
@@ -48,16 +41,21 @@ def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[...
 
 SYSTEM_PROMPT = load_dynamic_prompt("system_prompt_short.j2", function_mappings)
 
+print(SYSTEM_PROMPT)
+
 client = OpenAI()
 
 class Interpretation(BaseModel):
-    log_type: str
+    #log_type: str
     thoughts: str
     intent: str
-    args: dict[str, Any]
+    # args: Union[ReadFile, AskForClarification, ProvideFurtherAssistance]
+    args: Union[ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow]  # Use your tool classes!
+
+    model_config = ConfigDict(extra="forbid")
     
-    class Config:
-        extra = "forbid"  # This prevents additional properties
+    #class Config:
+    #    extra = "forbid"  # This prevents additional properties
 
 class Response(BaseModel):
     interpretations: list[Interpretation]
@@ -66,12 +64,15 @@ messages: list[ChatCompletionMessageParam] = list([
     ChatCompletionSystemMessageParam(content=SYSTEM_PROMPT, role="system"),
 ])
 
+# Initialize memory manager
+memory_manager = MemoryManager()
+
 # Initialize a response object to collect all interpretations
 final_response = Response(interpretations=[])
 
 iteration: int = 0
-max_iterations = 50
-max_messages = 35  # Keeping only last 35 messages to prevent memory issues
+max_iterations = 25
+max_messages = 20  # Keeping only last 20 messages to prevent memory issues
 
 while True and iteration < max_iterations:
     iteration += 1
@@ -79,39 +80,49 @@ while True and iteration < max_iterations:
     print(f"Current message count: {len(messages)}")
 
     try:
-        completion = client.chat.completions.create(
-            model="gpt-4-1106-preview",
+        completion = client.chat.completions.parse(
+            model="gpt-4.1",
             messages=messages,
-            response_format={"type": "json_object"},
-            temperature=1.2
+            # response_format={"type": "json_object"},
+            #put my structured output here
+            temperature=0.7,
+            response_format=Interpretation
         )
+
+        print(json.dumps(completion.choices[0].message.to_dict(), ensure_ascii=False, indent=2))
+        # observation = completion.choices[0].message.parsed
+
+        #print(observation)
+        #print(type(observation))
+
     except Exception as e:
         print(f"Erreur lors de l'appel à OpenAI: {e}")
         break
 
     # print(completion.choices[0].message.observation)
 
-    observation = completion.choices[0].message.content
-    if observation is None:
+    interpretation = completion.choices[0].message.parsed
+
+    if interpretation is None:
         raise ValueError("Received empty response from OpenAI")
     
     try: 
-        response_dict = json.loads(observation)
+        # response_dict = json.loads(observation)
         # Parse the interpretation from the response
-        interpretation = Interpretation(**response_dict)
+        # interpretation = observation
         
         # Add this interpretation to the final response
         final_response.interpretations.append(interpretation)
         
-        log_type: str = interpretation.log_type
+        # log_type: str = interpretation.log_type
         thoughts: str = interpretation.thoughts
         intent: str = interpretation.intent
-        args: dict[str, Any] = interpretation.args
+        args: dict[str, Any] = interpretation.args.model_dump()
 
         messages.append(
             ChatCompletionAssistantMessageParam(
                 role="assistant",
-                content=observation
+                content=interpretation.model_dump_json()
             )
         )
 
@@ -127,6 +138,7 @@ while True and iteration < max_iterations:
             function = function_mappings[intent]
             result = function(**args)
             print(f"Function result: {result}")
+            print(f"Intent: {intent}")
 
             # For user input functions, add the user's response as a user message
             if intent in ["ask_for_clarification", "provide_further_assistance"]:
@@ -158,6 +170,16 @@ while True and iteration < max_iterations:
                 print("="*80)
                 print(termination_message)
                 print("="*80)
+                
+                # Save conversation to memory
+                try:
+                    print(f"\n💾 Saving conversation to memory...")
+                    memory_file = memory_manager.save_conversation(".", final_response.model_dump())
+                    print(f"✅ Conversation saved to memory: {memory_file}")
+                except Exception as e:
+                    print(f"\n⚠️ Failed to save memory: {e}")
+                    import traceback
+                    traceback.print_exc()
                 
                 # Print the complete final response with all interpretations
                 print("\n" + "="*50)

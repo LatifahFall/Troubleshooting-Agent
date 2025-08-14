@@ -282,6 +282,19 @@ def system_check():
     status = SystemStatus()
     return status.to_dict()
 
+def get_app_history(app_path: str = ".") -> dict:
+    """Get historical data about this application for context"""
+    try:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        from memory_manager import MemoryManager
+        memory_manager = MemoryManager()
+        history = memory_manager.get_relevant_history(app_path)
+        return history
+    except Exception as e:
+        return {"error": f"Failed to load history: {e}"}
+
 def connectivity_check():
     host = os.getenv("HOST")
     port = os.getenv("PORT")
