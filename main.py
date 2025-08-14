@@ -8,6 +8,7 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
     ChatCompletionUserMessageParam, ChatCompletionAssistantMessageParam
 import json
 from tools import ToolFactory, ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow, SystemCheck, ConnectivityCheck
+from inspect import signature
 
 load_dotenv()
 
@@ -19,22 +20,21 @@ function_mappings: dict[str, Callable[..., Any]] = {
 }
 
 def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[..., Any]]) -> str:
-    from inspect import signature
-
+    # load the template from the file
     with open(template_path, "r", encoding="utf-8") as f:
         template = Template(f.read())
 
+    # create a context for the template
     capabilities_context = {
         name: {
             "signature": str(signature(func)),
-            "returns": "string" if name in ["read_file", "ask_for_clarification", "provide_further_assistance", "list_directory", "done_for_now"] else
-                       "list of strings" if name in ["find_app_log_files", "read_log_files"] else
-                       "list of dicts" if name in ["get_app_logs", "get_nginx_logs"] else
-                       "string"
+            "returns": "string" if name in ["read_file", "ask_for_clarification", "provide_further_assistance", "list_directory", "done_for_now"] else "list of strings"
+                    #    "list of strings" if name in ["find_app_log_files", "read_log_files"] else
+                    #    "list of dicts" if name in ["get_app_logs", "get_nginx_logs"] else
+                    #    "string"
         }
         for name, func in capabilities.items()
     }
-
     return template.render(capabilities=capabilities_context)
 
 SYSTEM_PROMPT = load_dynamic_prompt("system_prompt_short.j2", function_mappings)
