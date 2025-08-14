@@ -85,7 +85,6 @@ while True and iteration < max_iterations:
             temperature=0.7,
             response_format=Interpretation
         )
-
         # Debug: print raw OpenAI response only when i need
         # print(json.dumps(completion.choices[0].message.to_dict(), ensure_ascii=False, indent=2))
 
