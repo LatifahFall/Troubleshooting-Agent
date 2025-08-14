@@ -4,7 +4,9 @@ import inspect
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Dict
+import psutil
+import platform
 
 class BaseTool(BaseModel):
     """Base class for all tools"""
@@ -86,16 +88,56 @@ class DoneForNow(BaseTool):
     """Indicate that the conversation is over"""
     message: str = Field(...,description="The message to show to the user to indicate that the conversation is over")
     
-    def execute(self, message: str) -> None:
+    def execute(self, message: str) -> str:
         print(f"\n{'*' * 20}")
+        print("ANALYSIS COMPLETE")
         print(f"\n{message}")
         print(f"\n{'*' * 20}")
+        return f"Analysis completed: {message}"
+
+# System Tools
+class SystemInfo(BaseModel):
+    """Model for system information"""
+    os: str
+    os_version: str
+    cpu_count: int
+    memory: Dict[str, float]
+    disk: Dict[str, float]
+
+class SystemCheck(BaseTool):
+    """Tool for performing system checks"""
+    
+    def execute(self) -> SystemInfo:
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        cpu_count = psutil.cpu_count(logical=True)
+        
+        return SystemInfo(
+            os=platform.system(),
+            os_version=platform.version(),
+            cpu_count=cpu_count,
+            memory={
+                "total_gb": round(memory.total / (1024**3), 2),
+                "available_gb": round(memory.available / (1024**3), 2),
+                "used_gb": round((memory.total - memory.available) / (1024**3), 2),
+                "usage_percent": round(memory.percent, 2),
+                "available_percent": round((memory.available / memory.total) * 100, 2)
+            },
+            disk={
+                "total_gb": round(disk.total / (1024**3), 2),
+                "free_gb": round(disk.free / (1024**3), 2),
+                "used_gb": round((disk.total - disk.free) / (1024**3), 2),
+                "usage_percent": round(((disk.total - disk.free) / disk.total) * 100, 2),
+                "free_percent": round((disk.free / disk.total) * 100, 2)
+            }
+        )
 
 ##adapte notre nouveau mode operatoire au main.py
 class ToolFactory:
     """Factory class for creating tool instances"""
     _tools = {
         "read_file": ReadFile,
+        "system_check": SystemCheck,
         "ask_for_clarification": AskForClarification,
         "provide_further_assistance": ProvideFurtherAssistance,
         "list_directory": ListDirectory,
@@ -116,6 +158,8 @@ class ToolFactory:
                 if len(sig.parameters) > 0:
                     if tool_class == ReadFile:
                         return execute_method(kwargs.get('path'))
+                    elif tool_class == SystemCheck:
+                        return execute_method()
                     elif tool_class == ListDirectory:
                         return execute_method(kwargs.get('path'))
                     elif tool_class == AskForClarification:

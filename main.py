@@ -28,10 +28,9 @@ def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[...
     capabilities_context = {
         name: {
             "signature": str(signature(func)),
-            "returns": "string" if name in ["read_file", "ask_for_clarification", "provide_further_assistance"] else
+            "returns": "string" if name in ["read_file", "ask_for_clarification", "provide_further_assistance", "list_directory", "done_for_now"] else
                        "list of strings" if name in ["find_app_log_files", "read_log_files"] else
                        "list of dicts" if name in ["get_app_logs", "get_nginx_logs"] else
-                       "None" if name in ["done_for_now"] else
                        "string"
         }
         for name, func in capabilities.items()
@@ -49,7 +48,6 @@ class Interpretation(BaseModel):
     #log_type: str
     thoughts: str
     intent: str
-    # args: Union[ReadFile, AskForClarification, ProvideFurtherAssistance]
     args: Union[ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow]  # Use your tool classes!
 
     model_config = ConfigDict(extra="forbid")
@@ -65,7 +63,7 @@ messages: list[ChatCompletionMessageParam] = list([
 ])
 
 # Initialize memory manager
-memory_manager = MemoryManager()
+# memory_manager = MemoryManager()
 
 # Initialize a response object to collect all interpretations
 final_response = Response(interpretations=[])
@@ -89,11 +87,8 @@ while True and iteration < max_iterations:
             response_format=Interpretation
         )
 
-        print(json.dumps(completion.choices[0].message.to_dict(), ensure_ascii=False, indent=2))
-        # observation = completion.choices[0].message.parsed
-
-        #print(observation)
-        #print(type(observation))
+        # Debug: print raw OpenAI response only when i need
+        # print(json.dumps(completion.choices[0].message.to_dict(), ensure_ascii=False, indent=2))
 
     except Exception as e:
         print(f"Erreur lors de l'appel à OpenAI: {e}")
@@ -131,7 +126,8 @@ while True and iteration < max_iterations:
             # Keep system message and last max_messages-1 messages
             messages = [messages[0]] + messages[-(max_messages-1):]
 
-        print(json.dumps(interpretation.model_dump(), ensure_ascii=False, indent=2))
+        # Don't print individual interpretations - only print final response at the end
+        # print(json.dumps(interpretation.model_dump(), ensure_ascii=False, indent=2))
         print("-" * 25)
 
         if intent in function_mappings:
@@ -163,23 +159,15 @@ while True and iteration < max_iterations:
                 messages = [messages[0]] + messages[-(max_messages-1):]
 
             if intent == "done_for_now":
-                # Extract and display the termination message
-                termination_message = args.get("message", "No termination message found")
-                print("\n" + "="*80)
-                print("ANALYSIS COMPLETE")
-                print("="*80)
-                print(termination_message)
-                print("="*80)
-                
                 # Save conversation to memory
-                try:
-                    print(f"\n💾 Saving conversation to memory...")
-                    memory_file = memory_manager.save_conversation(".", final_response.model_dump())
-                    print(f"✅ Conversation saved to memory: {memory_file}")
-                except Exception as e:
-                    print(f"\n⚠️ Failed to save memory: {e}")
-                    import traceback
-                    traceback.print_exc()
+                # try:
+                #     print(f"\n💾 Saving conversation to memory...")
+                #     memory_file = memory_manager.save_conversation(".", final_response.model_dump())
+                #     print(f"✅ Conversation saved to memory: {memory_file}")
+                # except Exception as e:
+                #     print(f"\n⚠️ Failed to save memory: {e}")
+                #     import traceback
+                #     traceback.print_exc()
                 
                 # Print the complete final response with all interpretations
                 print("\n" + "="*50)
