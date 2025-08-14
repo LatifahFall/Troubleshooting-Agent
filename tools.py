@@ -4,9 +4,11 @@ import inspect
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import psutil
 import platform
+import socket
+import telnetlib
 
 class BaseTool(BaseModel):
     """Base class for all tools"""
@@ -132,6 +134,57 @@ class SystemCheck(BaseTool):
             }
         )
 
+class ConnectivityResult(BaseModel):
+    """Model for connectivity check results"""
+    status: str
+    message: str
+    telnet_error: Optional[str] = None
+    socket_error: Optional[str] = None
+
+class ConnectivityCheck(BaseTool):
+    """Tool for checking network connectivity"""
+    
+    def execute(self) -> ConnectivityResult:
+        host = os.getenv("HOST")
+        port = os.getenv("PORT")
+
+        if not host or not port:
+            return ConnectivityResult(
+                status="error", 
+                message="Missing HOST or PORT environment variables"
+            )
+
+        try:
+            port_int = int(port)
+        except ValueError:
+            return ConnectivityResult(
+                status="error", 
+                message="PORT must be a number"
+            )
+
+        try:
+            tn = telnetlib.Telnet(host, port_int, timeout=5)
+            tn.close()
+            return ConnectivityResult(
+                status="success", 
+                message=f"Telnet connection to {host}:{port} succeeded"
+            )
+        except Exception as telnet_error:
+            # Fallback: essayer socket connection
+            try:
+                with socket.create_connection((host, port_int), timeout=5):
+                    return ConnectivityResult(
+                        status="success", 
+                        message=f"Socket connection to {host}:{port} succeeded (Telnet failed)"
+                    )
+            except Exception as socket_error:
+                return ConnectivityResult(
+                    status="error",
+                    message=f"Connection to {host}:{port} failed",
+                    telnet_error=str(telnet_error),
+                    socket_error=str(socket_error)
+                )
+
 ##adapte notre nouveau mode operatoire au main.py
 class ToolFactory:
     """Factory class for creating tool instances"""
@@ -142,6 +195,7 @@ class ToolFactory:
         "provide_further_assistance": ProvideFurtherAssistance,
         "list_directory": ListDirectory,
         "done_for_now": DoneForNow,
+        "connectivity_check": ConnectivityCheck,
     }
 
     @classmethod
@@ -158,15 +212,11 @@ class ToolFactory:
                 if len(sig.parameters) > 0:
                     if tool_class == ReadFile:
                         return execute_method(kwargs.get('path'))
-                    elif tool_class == SystemCheck:
+                    elif tool_class == SystemCheck or tool_class == ConnectivityCheck:
                         return execute_method()
                     elif tool_class == ListDirectory:
                         return execute_method(kwargs.get('path'))
-                    elif tool_class == AskForClarification:
-                        return execute_method(kwargs.get('message'))
-                    elif tool_class == ProvideFurtherAssistance:
-                        return execute_method(kwargs.get('message'))
-                    elif tool_class == DoneForNow:
+                    elif tool_class in (AskForClarification, ProvideFurtherAssistance, DoneForNow):
                         return execute_method(kwargs.get('message'))
                     else:
                         return execute_method()

@@ -1,14 +1,13 @@
-from utils import get_app_logs, get_nginx_logs, read_file, ask_for_clarification, provide_further_assistance, provide_diagnosis, get_app_log_directory, get_nginx_log_directory, system_check, connectivity_check, get_app_history
-from memory_manager import MemoryManager
+# from memory_manager import MemoryManager
 from dotenv import load_dotenv
 from openai import OpenAI
 from jinja2 import Template
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Union
 from pydantic import BaseModel, ValidationError, ConfigDict
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMessageParam, \
     ChatCompletionUserMessageParam, ChatCompletionAssistantMessageParam
 import json
-from tools import ToolFactory, ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow
+from tools import ToolFactory, ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow, SystemCheck, ConnectivityCheck
 
 load_dotenv()
 
@@ -45,10 +44,10 @@ print(SYSTEM_PROMPT)
 client = OpenAI()
 
 class Interpretation(BaseModel):
-    #log_type: str
+    log_type: str
     thoughts: str
     intent: str
-    args: Union[ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow]  # Use your tool classes!
+    args: Union[ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow, SystemCheck, ConnectivityCheck]
 
     model_config = ConfigDict(extra="forbid")
     
@@ -102,14 +101,11 @@ while True and iteration < max_iterations:
         raise ValueError("Received empty response from OpenAI")
     
     try: 
-        # response_dict = json.loads(observation)
-        # Parse the interpretation from the response
-        # interpretation = observation
         
-        # Add this interpretation to the final response
+        # Adding this interpretation to the final response
         final_response.interpretations.append(interpretation)
         
-        # log_type: str = interpretation.log_type
+        log_type: str = interpretation.log_type
         thoughts: str = interpretation.thoughts
         intent: str = interpretation.intent
         args: dict[str, Any] = interpretation.args.model_dump()
@@ -126,7 +122,7 @@ while True and iteration < max_iterations:
             # Keep system message and last max_messages-1 messages
             messages = [messages[0]] + messages[-(max_messages-1):]
 
-        # Don't print individual interpretations - only print final response at the end
+        # not printing individual interpretations, only print final response at the end
         # print(json.dumps(interpretation.model_dump(), ensure_ascii=False, indent=2))
         print("-" * 25)
 
