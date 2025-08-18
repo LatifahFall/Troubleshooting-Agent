@@ -10,10 +10,27 @@ import json
 from tools import ToolFactory, ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow, SystemCheck, ConnectivityCheck
 from inspect import signature
 import requests
+import json
 import os
 from report_manager import ReportManager
 
 load_dotenv()
+
+def send_teams_message(message: str):
+    webhook = "https://prod-186.westeurope.logic.azure.com:443/workflows/c5a65c6b8fb14fa28375af6b7e54da0f/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=hqxw7xLDPh0cVA0YjRJw8WBHe8WdUsFrlwJdBMMomYQ"
+    
+    payload = {
+        "text": message
+    }
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(webhook, data=json.dumps(payload), headers=headers)
+
+    if response.status_code == 200:
+        print("✅ Alert sent to Microsoft Teams successfully!")
 
 tool_factory = ToolFactory()
 tool_mappings = tool_factory.create_function_mappings()
@@ -207,6 +224,14 @@ while True and iteration < max_iterations:
                         report_content = result
                     report_path = report_manager.save_report(app_id, report_content)
                     print(f"✅ Report saved: {report_path}")
+                    
+                    # Send diagnosis to Teams
+                    try:
+                        print(f"\n📱 Sending diagnosis to Microsoft Teams...")
+                        send_teams_message(report_content)
+                    except Exception as teams_error:
+                        print(f"\n⚠️ Failed to send Teams notification: {teams_error}")
+                        
                 except Exception as e:
                     print(f"\n⚠️ Failed to save report: {e}")
                     import traceback
