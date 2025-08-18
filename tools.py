@@ -68,6 +68,7 @@ class ListDirectory(BaseTool):
             if not os.path.isdir(path):
                 return f"Erreur: '{path}' n'est pas un répertoire"
             
+            # this was initially for debugging purposes, but imma keep it for now
             items = []
             for item in sorted(os.listdir(path)):
                 item_path = os.path.join(path, item)
@@ -94,6 +95,7 @@ class DoneForNow(BaseTool):
         return f"{message}"
 
 # System Tools
+# model
 class SystemInfo(BaseModel):
     """Model for system information"""
     os: str
@@ -101,7 +103,7 @@ class SystemInfo(BaseModel):
     cpu_count: int
     memory: Dict[str, float]
     disk: Dict[str, float]
-
+# tool
 class SystemCheck(BaseTool):
     """Tool for performing system checks"""
     
@@ -130,6 +132,8 @@ class SystemCheck(BaseTool):
             }
         )
 
+# Network Tools
+# model
 class ConnectivityResult(BaseModel):
     """Model for connectivity check results"""
     status: str
@@ -137,6 +141,7 @@ class ConnectivityResult(BaseModel):
     telnet_error: Optional[str] = None
     socket_error: Optional[str] = None
 
+# tool
 class ConnectivityCheck(BaseTool):
     """Tool for checking network connectivity"""
     
@@ -159,6 +164,7 @@ class ConnectivityCheck(BaseTool):
             )
 
         try:
+            # try telnet connection (if it fails, try socket connection)
             tn = telnetlib.Telnet(host, port_int, timeout=5)
             tn.close()
             return ConnectivityResult(
@@ -181,9 +187,10 @@ class ConnectivityCheck(BaseTool):
                     socket_error=str(socket_error)
                 )
 
-##adapte notre nouveau mode operatoire au main.py
+#adapte notre nouveau mode operatoire au main.py
 class ToolFactory:
     """Factory class for creating tool instances"""
+    # mapper les noms->classes d'outils
     _tools = {
         "read_file": ReadFile,
         "system_check": SystemCheck,
@@ -193,7 +200,7 @@ class ToolFactory:
         "done_for_now": DoneForNow,
         "connectivity_check": ConnectivityCheck,
     }
-
+#  converti les classes d'outils en fonctions appelable dans notre main.py
     @classmethod
     def create_function_mappings(cls):
         """Create function mappings for all tools"""

@@ -9,6 +9,9 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
 import json
 from tools import ToolFactory, ReadFile, AskForClarification, ProvideFurtherAssistance, ListDirectory, DoneForNow, SystemCheck, ConnectivityCheck
 from inspect import signature
+import requests
+import os
+from report_manager import ReportManager
 
 load_dotenv()
 
@@ -63,15 +66,23 @@ messages: list[ChatCompletionMessageParam] = list([
     ChatCompletionSystemMessageParam(content=SYSTEM_PROMPT, role="system"),
 ])
 
-# Initialize memory manager
-# memory_manager = MemoryManager()
+# Initialize report manager
+report_manager = ReportManager()
+
+# Generate app ID based on the application directory
+app_id = os.path.basename(os.getcwd())  # current directory name as app ID
+# DEBUG: print the app ID pour voir si c'est bon
+print(f"📋 Application ID: {app_id}")
 
 # Initialize a response object to collect all interpretations
 final_response = Response(interpretations=[])
 
+# Variable to store le message de diagnostic specifique
+diagnostic_message = None
+
 iteration: int = 0
-max_iterations = 25
-max_messages = 20  # Keeping only last 20 messages to prevent memory issues
+max_iterations = 35
+max_messages = 30  # Keeping only last 20 messages to prevent memory issues
 
 while True and iteration < max_iterations:
     iteration += 1
@@ -134,6 +145,16 @@ while True and iteration < max_iterations:
             # For user input functions, add the user's response as a user message
             if action_type in ["ask_for_clarification", "provide_further_assistance"]:
                 print(f"{result}")
+                
+                # Manière de reconnaitre un msg de diagnostic
+                # Capture diagnostic message if it contains diagnosis details + is longer than 500 characters
+                if action_type == "provide_further_assistance":
+                    message = action_params.get('message', '')
+                    if "Diagnosis" in message and len(message) > 250:
+                        diagnostic_message = message
+                        print(f"🔍 Diagnostic captured ({len(message)} characters)")
+                    #TODO: j'aime pas cette logique, c'est pas sûr, il faudrait que le diagnostic soit un peu plus explicite, trouver mieux
+
                 messages.append(ChatCompletionUserMessageParam(
                     role="user",
                     content=result
@@ -176,16 +197,20 @@ while True and iteration < max_iterations:
                 print(f"\n{result}")
                 print(f"\n{'*' * 20}")
                 
-                # Save conversation to memory
-                # try:
-                #     print(f"\n💾 Saving conversation to memory...")
-                #     memory_file = memory_manager.save_conversation(".", final_response.model_dump())
-                #     print(f"✅ Conversation saved to memory: {memory_file}")
-                # except Exception as e:
-                #     print(f"\n⚠️ Failed to save memory: {e}")
-                #     import traceback
-                #     traceback.print_exc()
-                
+                # Save troubleshooting report
+                try:
+                    print(f"\n📄 Saving troubleshooting report...")
+                    #si pas de diagnostic message, on utilise le dernier message
+                    if diagnostic_message:
+                        report_content = diagnostic_message
+                    else:
+                        report_content = result
+                    report_path = report_manager.save_report(app_id, report_content)
+                    print(f"✅ Report saved: {report_path}")
+                except Exception as e:
+                    print(f"\n⚠️ Failed to save report: {e}")
+                    import traceback
+                    traceback.print_exc()
                 break
         else:
             raise ValueError("Invalid action type")
