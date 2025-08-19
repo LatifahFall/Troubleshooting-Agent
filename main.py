@@ -93,7 +93,7 @@ report_manager = ReportManager()
 try:
     db_manager = DatabaseManager()
     session_id = str(uuid.uuid4())
-    print(f"📊 Database connected - Session: {session_id[:8]}")
+    print(f"--- Database connected - Session: {session_id[:8]}")
 except Exception as e:
     print(f"⚠️ Database connection failed: {e}")
     db_manager = None
@@ -102,7 +102,7 @@ except Exception as e:
 # Generate app ID based on the application directory
 app_id = os.path.basename(os.getcwd())  # current directory name as app ID
 # DEBUG: print the app ID pour voir si c'est bon
-print(f"📋 Application ID: {app_id}")
+print(f"--- Application ID: {app_id}")
 
 # Initialize a response object to collect all interpretations
 final_response = Response(interpretations=[])
@@ -182,7 +182,7 @@ while True and iteration < max_iterations:
                     message = action_params.get('message', '')
                     if "Diagnosis" in message and len(message) > 250:
                         diagnostic_message = message
-                        print(f"🔍 Diagnostic captured ({len(message)} characters)")
+                        print(f"--- Diagnostic captured ({len(message)} characters)")
                     #TODO: j'aime pas cette logique, c'est pas sûr, il faudrait que le diagnostic soit un peu plus explicite, trouver mieux
 
                 messages.append(ChatCompletionUserMessageParam(
@@ -229,18 +229,18 @@ while True and iteration < max_iterations:
                 
                 # Save troubleshooting report
                 try:
-                    print(f"\n📄 Saving troubleshooting report...")
+                    print(f"\n--- Saving troubleshooting report...")
                     #si pas de diagnostic message, on utilise le dernier message
                     if diagnostic_message:
                         report_content = diagnostic_message
                     else:
                         report_content = result
                     report_path = report_manager.save_report(app_id, report_content)
-                    print(f"✅ Report saved: {report_path}")
+                    print(f"--- Report saved: {report_path}")
                     
                     # Send diagnosis to Teams
                     try:
-                        print(f"\n📱 Sending diagnosis to Microsoft Teams...")
+                        print(f"\n--- Sending diagnosis to Microsoft Teams...")
                         send_teams_message(report_content)
                     except Exception as teams_error:
                         print(f"\n⚠️ Failed to send Teams notification: {teams_error}")
@@ -255,7 +255,7 @@ while True and iteration < max_iterations:
                                 diagnostic_message=diagnostic_message or result,
                                 final_response=final_response.model_dump()
                             )
-                            print(f"💾 Session saved to database")
+                            print(f"--- Session saved to database")
                         except Exception as e:
                             print(f"⚠️ Database save failed: {e}")
                         

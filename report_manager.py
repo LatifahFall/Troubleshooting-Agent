@@ -1,8 +1,8 @@
 import os
 import json
 from datetime import datetime
-from typing import Dict, Any
 import uuid
+import re
 
 
 class ReportManager:
@@ -68,6 +68,83 @@ class ReportManager:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         return f"Troubleshooting report - {timestamp}.md"
     
+    def _html_to_text(self, html_content: str) -> str:
+        """
+        Convertit le contenu HTML en texte brut pour les rapports sauvegardés.
+        
+        Args:
+            html_content: Contenu avec des balises HTML
+            
+        Returns:
+            Contenu en texte brut avec mise en forme simple
+        """
+        content = html_content
+        
+        # Nettoyer les retours à la ligne et espaces autour des balises
+        content = re.sub(r'\s*\n\s*', ' ', content)  # Remplacer les sauts de ligne par des espaces
+        content = re.sub(r'>\s+<', '><', content)  # Supprimer les espaces entre balises
+        
+        # Remplacer les balises de titre
+        content = re.sub(r'<h2>(.*?)</h2>', r'\n\n## \1\n\n', content)
+        content = re.sub(r'<h3>(.*?)</h3>', r'\n\n### \1\n\n', content)
+        
+        # Remplacer les paragraphes
+        content = re.sub(r'<p>(.*?)</p>', r'\1\n\n', content)
+        
+        # Traitement des listes ordonnées AVANT les listes non ordonnées
+        def process_ordered_list(match):
+            ol_content = match.group(1)
+            lines = []
+            counter = 1
+            
+            # Extraire tous les éléments <li>
+            li_items = re.findall(r'<li>(.*?)</li>', ol_content)
+            for item in li_items:
+                # Nettoyer le contenu de chaque élément
+                clean_item = re.sub(r'<strong>(.*?)</strong>', r'**\1**', item)
+                clean_item = re.sub(r'<code>(.*?)</code>', r'`\1`', clean_item)
+                clean_item = re.sub(r'<[^>]+>', '', clean_item)  # Supprimer les autres balises
+                lines.append(f"{counter}. {clean_item}")
+                counter += 1
+            
+            return '\n\n' + '\n'.join(lines) + '\n\n'
+        
+        # Appliquer le traitement des listes ordonnées
+        content = re.sub(r'<ol>(.*?)</ol>', process_ordered_list, content)
+        
+        # Traitement des listes non ordonnées
+        def process_unordered_list(match):
+            ul_content = match.group(1)
+            lines = []
+            
+            # Extraire tous les éléments <li>
+            li_items = re.findall(r'<li>(.*?)</li>', ul_content)
+            for item in li_items:
+                # Nettoyer le contenu de chaque élément
+                clean_item = re.sub(r'<strong>(.*?)</strong>', r'**\1**', item)
+                clean_item = re.sub(r'<code>(.*?)</code>', r'`\1`', clean_item)
+                clean_item = re.sub(r'<[^>]+>', '', clean_item)  # Supprimer les autres balises
+                lines.append(f"• {clean_item}")
+            
+            return '\n\n' + '\n'.join(lines) + '\n\n'
+        
+        # Appliquer le traitement des listes non ordonnées
+        content = re.sub(r'<ul>(.*?)</ul>', process_unordered_list, content)
+        
+        # Remplacer les balises de mise en forme restantes
+        content = re.sub(r'<strong>(.*?)</strong>', r'**\1**', content)
+        content = re.sub(r'<code>(.*?)</code>', r'`\1`', content)
+        
+        # Nettoyer toutes les balises HTML restantes
+        content = re.sub(r'<[^>]+>', '', content)
+        
+        # Normaliser les espaces et sauts de ligne
+        content = re.sub(r'[ \t]+', ' ', content)  # Remplacer les espaces multiples par un seul
+        content = re.sub(r'\n{3,}', '\n\n', content)  # Limiter à 2 sauts de ligne consécutifs max
+        content = re.sub(r'^\s+|\s+$', '', content)  # Supprimer les espaces en début/fin
+        
+        return content.strip()
+    
     def save_report(self, app_id: str, message: str) -> str:
         """
         Sauvegarde un rapport pour une application.
@@ -86,15 +163,18 @@ class ReportManager:
         filename = self.create_report_filename()
         filepath = os.path.join(app_dir, filename)
         
+        # Convertir le contenu HTML en texte brut pour le rapport sauvegardé
+        clean_message = self._html_to_text(message)
+        
         # Formate le contenu
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         content = f"""# Rapport de Troubleshooting
 
 **Date et heure:** {timestamp}
 
-## 📋 Rapport de l'agent
+## Rapport de l'agent
 
-{message}
+{clean_message}
 
 ---
 *Rapport généré automatiquement par l'agent de troubleshooting*

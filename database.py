@@ -16,7 +16,7 @@ class TroubleshootingSession(Base):
 
 class DatabaseManager:
     def __init__(self):
-        database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/troubleshooting')
+        database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:root@localhost:5433/troubleshooting')
         self.engine = create_engine(database_url)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         Base.metadata.create_all(bind=self.engine)
