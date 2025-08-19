@@ -22,3 +22,7 @@ python-dotenv
 jinja2
 psutil
 requests
+
+#DB
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+sqlalchemy==2.0.23      # ORM

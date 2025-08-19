@@ -1,4 +1,3 @@
-# from memory_manager import MemoryManager
 from dotenv import load_dotenv
 from openai import OpenAI
 from jinja2 import Template
@@ -13,7 +12,10 @@ import requests
 import json
 import os
 from report_manager import ReportManager
-
+# ================================
+from database import DatabaseManager
+import uuid
+# ================================
 load_dotenv()
 
 def send_teams_message(message: str):
@@ -85,6 +87,17 @@ messages: list[ChatCompletionMessageParam] = list([
 
 # Initialize report manager
 report_manager = ReportManager()
+
+# ================================
+# Initialize database
+try:
+    db_manager = DatabaseManager()
+    session_id = str(uuid.uuid4())
+    print(f"📊 Database connected - Session: {session_id[:8]}")
+except Exception as e:
+    print(f"⚠️ Database connection failed: {e}")
+    db_manager = None
+# ================================
 
 # Generate app ID based on the application directory
 app_id = os.path.basename(os.getcwd())  # current directory name as app ID
@@ -231,6 +244,20 @@ while True and iteration < max_iterations:
                         send_teams_message(report_content)
                     except Exception as teams_error:
                         print(f"\n⚠️ Failed to send Teams notification: {teams_error}")
+                    
+                    # ================================
+                    # Save to database
+                    if db_manager:
+                        try:
+                            db_manager.save_session(
+                                session_id=session_id,
+                                app_name=app_id,
+                                diagnostic_message=diagnostic_message or result,
+                                final_response=final_response.model_dump()
+                            )
+                            print(f"💾 Session saved to database")
+                        except Exception as e:
+                            print(f"⚠️ Database save failed: {e}")
                         
                 except Exception as e:
                     print(f"\n⚠️ Failed to save report: {e}")
@@ -240,7 +267,7 @@ while True and iteration < max_iterations:
         else:
             raise ValueError("Invalid action type")
 
-
+    # ================================
     except ValidationError as e:
         print(f"Erreur de validation du modèle Response: {e}")
 
