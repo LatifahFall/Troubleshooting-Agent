@@ -32,7 +32,7 @@ def send_teams_message(message: str):
     response = requests.post(webhook, data=json.dumps(payload), headers=headers)
 
     if response.status_code == 200:
-        print("✅ Alert sent to Microsoft Teams successfully!")
+        print("Alert sent to Microsoft Teams successfully!")
 
 tool_factory = ToolFactory()
 tool_mappings = tool_factory.create_function_mappings()
@@ -59,7 +59,7 @@ def load_dynamic_prompt(template_path: str, capabilities: dict[str, Callable[...
     }
     return template.render(capabilities=capabilities_context)
 
-SYSTEM_PROMPT = load_dynamic_prompt("system_prompt_short.j2", function_mappings)
+SYSTEM_PROMPT = load_dynamic_prompt("system_prompt.j2", function_mappings)
 
 # print(SYSTEM_PROMPT)
 
@@ -112,7 +112,7 @@ diagnostic_message = None
 
 iteration: int = 0
 max_iterations = 35
-max_messages = 30  # Keeping only last 20 messages to prevent memory issues
+max_messages = 30
 
 while True and iteration < max_iterations:
     iteration += 1
