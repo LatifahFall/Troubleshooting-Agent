@@ -1,4 +1,4 @@
-# Troubleshooting Agent
+# Troubleshooting Agent Tetra
 
 Un agent intelligent de diagnostic et de résolution de problèmes pour applications web utilisant l'IA générative.
 
@@ -88,7 +88,7 @@ Les rapports sont automatiquement générés au format Markdown dans le dossier 
 - **psutil** : Monitoring système
 - **requests** : Intégration Teams
 
-## Configuration avancée
+## Configuration
 
 L'agent utilise un système de prompts dynamiques configurables via le fichier `system_prompt.j2` pour adapter le comportement selon les besoins.
 
