@@ -200,7 +200,7 @@ class ToolFactory:
         "done_for_now": DoneForNow,
         "connectivity_check": ConnectivityCheck,
     }
-#  converti les classes d'outils en fonctions appelable dans notre main.py
+#  convertit les classes d'outils en fonctions appelable dans notre main.py
     @classmethod
     def create_function_mappings(cls):
         """Create function mappings for all tools"""
