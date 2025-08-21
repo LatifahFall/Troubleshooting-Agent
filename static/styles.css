@@ -1,0 +1,105 @@
+body { 
+    font-family: Arial, sans-serif; 
+    max-width: 1000px; 
+    margin: 20px auto; 
+    padding: 20px; 
+}
+.container {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 20px;
+}
+.sidebar {
+    border-right: 1px solid #ccc;
+    padding-right: 20px;
+}
+.main-content {
+    text-align: center;
+}
+button { 
+    background-color: #007bff; 
+    color: white; 
+    border: none; 
+    padding: 10px 15px; 
+    margin: 5px;
+    border-radius: 5px; 
+    cursor: pointer; 
+    font-size: 14px;
+    width: 100%;
+}
+button:hover { background-color: #0056b3; }
+button.secondary { background-color: #6c757d; }
+button.secondary:hover { background-color: #545b62; }
+
+.current-path {
+    background-color: #e9ecef;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.file-browser {
+    background-color: #f8f9fa;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    height: 400px;
+    overflow-y: auto;
+}
+
+.dir-item, .file-item {
+    padding: 8px;
+    margin: 2px 0;
+    cursor: pointer;
+    border-radius: 3px;
+    border: 1px solid transparent;
+}
+.dir-item:hover, .file-item:hover {
+    background-color: #e9ecef;
+}
+.dir-item {
+    font-weight: bold;
+    color: #007bff;
+}
+.selected {
+    background-color: #007bff;
+    color: white;
+}
+
+.result {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    text-align: left;
+}
+
+/* Styles spécifiques pour les logs */
+#logs {
+    height: 300px; 
+    overflow-y: auto; 
+    font-family: monospace; 
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    border: 1px solid #333;
+    line-height: 1.4;
+    font-size: 12px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .sidebar {
+        border-right: none;
+        border-bottom: 1px solid #ccc;
+        padding-right: 0;
+        padding-bottom: 20px;
+    }
+}

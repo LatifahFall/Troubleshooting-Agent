@@ -11,7 +11,13 @@ from inspect import signature
 import requests
 import json
 import os
+import sys
 from report_manager import ReportManager
+
+# Forcer le flush automatique des sorties pour le mode web
+if os.getenv('WEB_MODE', 'false').lower() == 'true':
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
 # ================================
 from database import DatabaseManager
 import uuid
@@ -103,8 +109,8 @@ except Exception as e:
 target_app_path = os.getenv('TARGET_APP_PATH', os.getcwd())
 app_id = os.path.basename(target_app_path)  # target app directory name as app ID
 
-print(f"--- Target application path: {target_app_path}")
-print(f"--- Application ID: {app_id}")
+print(f"--- Target application path: {target_app_path}", flush=True)
+print(f"--- Application ID: {app_id}", flush=True)
 
 # Initialize a response object to collect all interpretations
 final_response = Response(interpretations=[])
@@ -118,8 +124,8 @@ max_messages = 30
 
 while True and iteration < max_iterations:
     iteration += 1
-    print(f"\n--- Iteration {iteration} ---")
-    print(f"Current message count: {len(messages)}")
+    print(f"\n--- Iteration {iteration} ---", flush=True)
+    print(f"Current message count: {len(messages)}", flush=True)
 
     try:
         completion = client.chat.completions.parse(

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <title>Troubleshooting Agent</title>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="/static/styles.css">
+    </head>
+    <body>
+        <h1>Troubleshooting Agent - Version 2</h1>
+        
+        <div class="container">
+            <!-- Sidebar avec explorateur -->
+            <div class="sidebar">
+                <h3>Explorateur de fichiers</h3>
+                
+                <div class="current-path" id="currentPath">
+                    Chargement...
+                </div>
+                
+                <button onclick="goUp()" class="secondary">Dossier parent</button>
+                <button onclick="refreshBrowser()" class="secondary">Actualiser</button>
+                
+                <div class="file-browser" id="fileBrowser">
+                    Chargement des dossiers...
+                </div>
+                
+                            <h3>Actions</h3>
+            <button onclick="selectCurrentFolder()">Selectionner ce dossier</button>
+            <button onclick="startDiagnostic()" id="startBtn">Lancer le diagnostic</button>
+            </div>
+            
+            <!-- Zone principale -->
+            <div class="main-content">
+                <h2>Dossier selectionne</h2>
+                <div id="selectedPath" class="current-path">
+                    Aucun dossier selectionne
+                </div>
+                
+                <div id="status" class="result" style="display: none;">
+                    Statut: Pret
+                </div>
+                
+                <h2>Logs du diagnostic</h2>
+                <div id="logs" class="result" style="display: block; height: 300px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">
+                    Aucun diagnostic en cours...
+                </div>
+            </div>
+        </div>
+
+    <script src="/static/script.js"></script>
+    </body>
+</html>
