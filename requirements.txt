@@ -26,3 +26,7 @@ requests
 #DB
 psycopg2-binary==2.9.9  # PostgreSQL adapter
 sqlalchemy==2.0.23      # ORM
+
+#interface web
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
