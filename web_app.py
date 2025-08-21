@@ -386,8 +386,11 @@ def run_real_diagnostic(app_path: str):
         # Preparer l'environnement avec le chemin cible
         env = os.environ.copy()
         env['TARGET_APP_PATH'] = app_path
+        env['WEB_MODE'] = 'true'  # Activer le mode web pour éviter les input()
         
         diagnostic_logs.append(f"[{timestamp}] Lancement de main.py...")
+        diagnostic_logs.append(f"[{timestamp}] Repertoire de travail: {os.getcwd()}")
+        diagnostic_logs.append(f"[{timestamp}] Chemin Python: {sys.executable}")
         
         # Executer main.py avec capture des sorties
         process = subprocess.Popen(
@@ -396,7 +399,8 @@ def run_real_diagnostic(app_path: str):
             stderr=subprocess.PIPE,
             text=True,
             env=env,
-            bufsize=1,  # Line buffered
+            cwd=os.getcwd(),  # S'assurer qu'on est dans le bon répertoire
+            bufsize=0,  # Unbuffered pour avoir les sorties immédiatement
             universal_newlines=True
         )
         
@@ -413,6 +417,22 @@ def run_real_diagnostic(app_path: str):
                 if line.strip():
                     timestamp = datetime.now().strftime('%H:%M:%S')
                     diagnostic_logs.append(f"[{timestamp}] STDERR: {line.strip()}")
+        
+        # Verifier si le processus a demarre
+        import time
+        time.sleep(0.5)  # Attendre un peu
+        if process.poll() is not None:
+            # Le processus s'est termine immediatement
+            stdout, stderr = process.communicate()
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            diagnostic_logs.append(f"[{timestamp}] ERREUR: Le processus s'est termine immediatement")
+            if stdout:
+                diagnostic_logs.append(f"[{timestamp}] STDOUT: {stdout}")
+            if stderr:
+                diagnostic_logs.append(f"[{timestamp}] STDERR: {stderr}")
+            return
+        
+        diagnostic_logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] Processus demarre avec succes, lecture des sorties...")
         
         # Demarrer les threads de lecture
         stdout_thread = threading.Thread(target=read_stdout)

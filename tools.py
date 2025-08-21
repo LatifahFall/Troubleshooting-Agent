@@ -51,6 +51,15 @@ class AskForClarification(BaseTool):
     message: str = Field(...,description="The message to ask for clarification")
 
     def execute(self, message: str) -> str:
+        # Mode web : pas d'interaction directe possible
+        if os.getenv('WEB_MODE', 'false').lower() == 'true':
+            print(f"\n{'*' * 20}")
+            print("DEMANDE DE CLARIFICATION (MODE WEB)")
+            print(f"Question: {message}")
+            print("Reponse automatique: Continuer le diagnostic")
+            return "Continuer le diagnostic sans clarification supplémentaire"
+        
+        # Mode console classique
         print(f"\n{'*' * 20}")
         print("ASKING FOR CLARIFICATION")
         response: str = input(f"\n{message}\nResponse: ")
@@ -61,6 +70,15 @@ class ProvideFurtherAssistance(BaseTool):
     message: str = Field(...,description="The message to show to the user to provide further assistance")
 
     def execute(self, message: str) -> str:
+        # Mode web : pas d'interaction directe possible
+        if os.getenv('WEB_MODE', 'false').lower() == 'true':
+            print(f"\n{'*' * 20}")
+            print("ASSISTANCE SUPPLEMENTAIRE (MODE WEB)")
+            print(f"Message: {message}")
+            print("Reponse automatique: Non merci")
+            return "Non merci, le diagnostic est suffisant"
+        
+        # Mode console classique
         print(f"\n{'*' * 20}")
         print("NEED MORE ASSISTANCE ?")
         response: str = input(f"\n{message}\nResponse: ")
