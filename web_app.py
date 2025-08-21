@@ -1,8 +1,18 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 import os
+import time
+from datetime import datetime
 
 app = FastAPI(title="Troubleshooting Agent")
+
+# Variables globales pour les logs
+diagnostic_logs = []
+diagnostic_running = False
+
+class DiagnosticRequest(BaseModel):
+    app_path: str
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
@@ -31,7 +41,7 @@ async def home():
             .main-content {
                 text-align: center;
             }
-            button {
+            button { 
                 background-color: #007bff; 
                 color: white; 
                 border: none; 
@@ -113,87 +123,103 @@ async def home():
                 </div>
                 
                 <h3>Actions</h3>
-                <button onclick="selectCurrentFolder()">Sélectionner ce dossier</button>
+                <button onclick="selectCurrentFolder()">Selectionner ce dossier</button>
+                <button onclick="startDiagnostic()" id="startBtn">Lancer le diagnostic</button>
                 <button onclick="testConnection()">Test de connexion</button>
             </div>
             
             <!-- Zone principale -->
             <div class="main-content">
-                <h2>Dossier sélectionné</h2>
+                <h2>Dossier selectionne</h2>
                 <div id="selectedPath" class="current-path">
-                    Aucun dossier sélectionné
+                    Aucun dossier selectionne
                 </div>
                 
-                <div id="result" class="result" style="display: none;">
-                    Résultat apparaîtra ici...
+                <div id="status" class="result" style="display: none;">
+                    Statut: Pret
+                </div>
+                
+                <h2>Logs du diagnostic</h2>
+                <div id="logs" class="result" style="display: block; height: 300px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">
+                    Aucun diagnostic en cours...
                 </div>
             </div>
         </div>
 
         <script>
-            let currentPath = "C:\\\\Users\\\\latif\\\\OneDrive\\\\Desktop";
-            let selectedPath = null;
+            var currentPath = "C:/Users/latif/OneDrive/Desktop";
+            var selectedPath = null;
             
-            // Charger au démarrage
+            // Charger au demarrage
             window.onload = function() {
                 loadDirectory(currentPath);
             };
             
             // Navigation dans les dossiers
-            async function loadDirectory(path) {
-                try {
-                    const response = await fetch(`/browse?path=${encodeURIComponent(path)}`);
-                    const data = await response.json();
-                    
-                    if (data.error) {
-                        alert('Erreur: ' + data.error);
-                        return;
-                    }
-                    
-                    currentPath = data.current_path;
-                    document.getElementById('currentPath').textContent = currentPath;
-                    
-                    const browser = document.getElementById('fileBrowser');
-                    browser.innerHTML = '';
-                    
-                    // Ajouter les dossiers
-                    data.directories.forEach(dir => {
-                        const item = document.createElement('div');
-                        item.className = 'dir-item';
-                        item.textContent = '[DIR] ' + dir;
-                        item.onclick = () => {
-                            const separator = currentPath.endsWith('\\\\') ? '' : '\\\\';
-                            const newPath = currentPath + separator + dir;
-                            loadDirectory(newPath);
-                        };
-                        browser.appendChild(item);
+            function loadDirectory(path) {
+                fetch('/browse?path=' + encodeURIComponent(path))
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.error) {
+                            alert('Erreur: ' + data.error);
+                            return;
+                        }
+                        
+                        currentPath = data.current_path;
+                        document.getElementById('currentPath').textContent = currentPath;
+                        
+                        var browser = document.getElementById('fileBrowser');
+                        browser.innerHTML = '';
+                        
+                        // Ajouter les dossiers
+                        for (var i = 0; i < data.directories.length; i++) {
+                            var dir = data.directories[i];
+                            var item = document.createElement('div');
+                            item.className = 'dir-item';
+                            item.textContent = '[DIR] ' + dir;
+                            item.setAttribute('data-dir', dir);
+                            item.onclick = function() {
+                                var separator = currentPath.endsWith('/') ? '' : '/';
+                                var newPath = currentPath + separator + this.getAttribute('data-dir');
+                                loadDirectory(newPath);
+                            };
+                            browser.appendChild(item);
+                        }
+                        
+                        // Ajouter les fichiers (juste pour affichage)
+                        for (var j = 0; j < data.files.length; j++) {
+                            var file = data.files[j];
+                            var item = document.createElement('div');
+                            item.className = 'file-item';
+                            item.textContent = '[FILE] ' + file;
+                            browser.appendChild(item);
+                        }
+                        
+                        if (data.directories.length === 0 && data.files.length === 0) {
+                            browser.innerHTML = '<p style="color: #666;">Dossier vide</p>';
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Erreur:', error);
+                        alert('Erreur de navigation: ' + error.message);
                     });
-                    
-                    // Ajouter les fichiers (juste pour affichage)
-                    data.files.forEach(file => {
-                        const item = document.createElement('div');
-                        item.className = 'file-item';
-                        item.textContent = '[FILE] ' + file;
-                        browser.appendChild(item);
-                    });
-                    
-                    if (data.directories.length === 0 && data.files.length === 0) {
-                        browser.innerHTML = '<p style="color: #666;">Dossier vide</p>';
-                    }
-                    
-                } catch (error) {
-                    console.error('Erreur:', error);
-                    alert('Erreur de navigation: ' + error.message);
-                }
             }
             
             function goUp() {
-                const parts = currentPath.split(/[\\\\/]/);
-                if (parts.length > 1) {
-                    const parentPath = parts.slice(0, -1).join('\\\\');
-                    if (parentPath) {
-                        loadDirectory(parentPath);
-                    }
+                console.log('goUp() clique, currentPath:', currentPath);
+                
+                // Simple: chercher le dernier separateur
+                var lastSlash = Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\\\'));
+                
+                if (lastSlash > 0) {
+                    var parentPath = currentPath.substring(0, lastSlash);
+                    console.log('Remontee vers:', parentPath);
+                    loadDirectory(parentPath);
+                } else {
+                    console.log('Deja a la racine');
+                    alert('Deja a la racine du systeme');
                 }
             }
             
@@ -206,27 +232,85 @@ async def home():
                 document.getElementById('selectedPath').textContent = selectedPath;
                 
                 // Visual feedback
-                document.getElementById('result').style.display = 'block';
-                document.getElementById('result').textContent = 
-                    'Dossier sélectionné: ' + selectedPath;
+                document.getElementById('status').style.display = 'block';
+                document.getElementById('status').textContent = 'Dossier selectionne: ' + selectedPath;
             }
             
-            async function testConnection() {
-                document.getElementById('result').style.display = 'block';
-                document.getElementById('result').textContent = 'Test en cours...';
-                
-                try {
-                    const response = await fetch('/test');
-                    const data = await response.json();
-                    
-                    document.getElementById('result').textContent = 
-                        'Connexion réussie! Message: ' + data.message +
-                        (selectedPath ? '\\nDossier sélectionné: ' + selectedPath : '');
-                        
-                } catch (error) {
-                    document.getElementById('result').textContent = 
-                        'Erreur: ' + error.message;
+            function startDiagnostic() {
+                if (!selectedPath) {
+                    alert('Veuillez selectionner un dossier');
+                    return;
                 }
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('status').style.display = 'block';
+                document.getElementById('status').textContent = 'Diagnostic en cours...';
+                document.getElementById('logs').textContent = 'Demarrage du diagnostic...';
+                
+                // Demarrer l'actualisation des logs
+                updateLogs();
+                var logsInterval = setInterval(function() {
+                    updateLogs();
+                }, 2000);
+                
+                fetch('/start-diagnostic', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({app_path: selectedPath})
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    if (result.error) {
+                        throw new Error(result.error);
+                    }
+                    document.getElementById('status').textContent = 'Diagnostic demarre!';
+                })
+                .catch(function(error) {
+                    document.getElementById('status').textContent = 'Erreur: ' + error.message;
+                    document.getElementById('startBtn').disabled = false;
+                    clearInterval(logsInterval);
+                });
+            }
+            
+            function updateLogs() {
+                fetch('/logs')
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.logs && data.logs.length > 0) {
+                            document.getElementById('logs').textContent = data.logs.join('\\n');
+                            
+                            // Scroll automatique vers le bas
+                            var logsEl = document.getElementById('logs');
+                            logsEl.scrollTop = logsEl.scrollHeight;
+                        }
+                        
+                        // Mettre a jour le statut si le diagnostic est termine
+                        if (data.status === 'completed') {
+                            document.getElementById('status').textContent = 'Diagnostic termine!';
+                            document.getElementById('startBtn').disabled = false;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Erreur actualisation logs:', error);
+                    });
+            }
+            
+            function testConnection() {
+                document.getElementById('status').style.display = 'block';
+                document.getElementById('status').textContent = 'Test en cours...';
+                
+                fetch('/test')
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        document.getElementById('status').textContent = 
+                            'Connexion reussie! Message: ' + data.message +
+                            (selectedPath ? ' - Dossier selectionne: ' + selectedPath : '');
+                    })
+                    .catch(function(error) {
+                        document.getElementById('status').textContent = 'Erreur: ' + error.message;
+                    });
             }
         </script>
     </body>
@@ -263,7 +347,7 @@ async def browse_directory(path: str = "."):
         return {
             "current_path": path,
             "directories": directories,
-            "files": files[:10]  # Limiter à 10 fichiers pour pas surcharger
+            "files": files[:10]  # Limiter a 10 fichiers pour pas surcharger
         }
         
     except PermissionError:
@@ -271,12 +355,81 @@ async def browse_directory(path: str = "."):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.post("/start-diagnostic")
+async def start_diagnostic(request: DiagnosticRequest, background_tasks: BackgroundTasks):
+    """Demarrer un diagnostic (simulation pour l'etape 3)"""
+    global diagnostic_running, diagnostic_logs
+    
+    if diagnostic_running:
+        return JSONResponse({"error": "Un diagnostic est deja en cours"}, status_code=400)
+    
+    diagnostic_running = True
+    diagnostic_logs = [f"[{datetime.now().strftime('%H:%M:%S')}] Diagnostic demarre pour: {request.app_path}"]
+    
+    # Lancer une simulation en arriere-plan
+    background_tasks.add_task(simulate_diagnostic, request.app_path)
+    
+    return {"status": "started", "message": "Diagnostic demarre"}
+
+def simulate_diagnostic(app_path: str):
+    """Simulation d'un diagnostic pour tester les logs en temps reel"""
+    global diagnostic_running, diagnostic_logs
+    
+    try:
+        # Simulation des etapes du diagnostic
+        steps = [
+            "Initialisation de l'agent...",
+            "Verification des permissions...",
+            "Recherche des fichiers de logs...",
+            "Lecture des logs d'erreur...",
+            "Analyse des patterns d'erreur...",
+            "Verification des ressources systeme...",
+            "Test de connectivite...",
+            "Generation du rapport...",
+            "Sauvegarde du rapport...",
+            "Diagnostic termine avec succes!"
+        ]
+        
+        for i, step in enumerate(steps):
+            time.sleep(2)  # Attendre 2 secondes entre chaque etape
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            diagnostic_logs.append(f"[{timestamp}] {step}")
+            
+            # Ajouter quelques logs techniques
+            if "logs" in step.lower():
+                diagnostic_logs.append(f"[{timestamp}] - Trouve 3 fichiers de logs")
+                diagnostic_logs.append(f"[{timestamp}] - Lecture de error.log (1.2MB)")
+            elif "systeme" in step.lower():
+                diagnostic_logs.append(f"[{timestamp}] - CPU: 45%, RAM: 78%, Disque: 82%")
+            elif "connectivite" in step.lower():
+                diagnostic_logs.append(f"[{timestamp}] - Test port 80: OK")
+                diagnostic_logs.append(f"[{timestamp}] - Test port 443: OK")
+        
+    except Exception as e:
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        diagnostic_logs.append(f"[{timestamp}] ERREUR: {str(e)}")
+    finally:
+        diagnostic_running = False
+
+@app.get("/logs")
+async def get_logs():
+    """Recuperer les logs actuels"""
+    global diagnostic_running, diagnostic_logs
+    
+    status = "running" if diagnostic_running else ("completed" if diagnostic_logs else "ready")
+    
+    return {
+        "logs": diagnostic_logs,
+        "status": status,
+        "running": diagnostic_running
+    }
+
 @app.get("/test")
 async def test():
-    return {"message": "Interface web opérationnelle!", "status": "ok"}
+    return {"message": "Interface web operationnelle!", "status": "ok"}
 
 if __name__ == "__main__":
     import uvicorn
-    print("Démarrage interface V2 avec explorateur...")
+    print("Demarrage interface V3 avec logs temps reel...")
     print("http://localhost:8000")
     uvicorn.run("web_app:app", host="0.0.0.0", port=8000, reload=True)
