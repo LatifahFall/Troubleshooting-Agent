@@ -366,48 +366,79 @@ async def start_diagnostic(request: DiagnosticRequest, background_tasks: Backgro
     diagnostic_running = True
     diagnostic_logs = [f"[{datetime.now().strftime('%H:%M:%S')}] Diagnostic demarre pour: {request.app_path}"]
     
-    # Lancer une simulation en arriere-plan
-    background_tasks.add_task(simulate_diagnostic, request.app_path)
+    # Lancer le vrai diagnostic en arriere-plan
+    background_tasks.add_task(run_real_diagnostic, request.app_path)
     
     return {"status": "started", "message": "Diagnostic demarre"}
 
-def simulate_diagnostic(app_path: str):
-    """Simulation d'un diagnostic pour tester les logs en temps reel"""
+def run_real_diagnostic(app_path: str):
+    """Executer le vrai agent de troubleshooting"""
     global diagnostic_running, diagnostic_logs
     
     try:
-        # Simulation des etapes du diagnostic
-        steps = [
-            "Initialisation de l'agent...",
-            "Verification des permissions...",
-            "Recherche des fichiers de logs...",
-            "Lecture des logs d'erreur...",
-            "Analyse des patterns d'erreur...",
-            "Verification des ressources systeme...",
-            "Test de connectivite...",
-            "Generation du rapport...",
-            "Sauvegarde du rapport...",
-            "Diagnostic termine avec succes!"
-        ]
+        import subprocess
+        import sys
+        import threading
         
-        for i, step in enumerate(steps):
-            time.sleep(2)  # Attendre 2 secondes entre chaque etape
-            timestamp = datetime.now().strftime('%H:%M:%S')
-            diagnostic_logs.append(f"[{timestamp}] {step}")
-            
-            # Ajouter quelques logs techniques
-            if "logs" in step.lower():
-                diagnostic_logs.append(f"[{timestamp}] - Trouve 3 fichiers de logs")
-                diagnostic_logs.append(f"[{timestamp}] - Lecture de error.log (1.2MB)")
-            elif "systeme" in step.lower():
-                diagnostic_logs.append(f"[{timestamp}] - CPU: 45%, RAM: 78%, Disque: 82%")
-            elif "connectivite" in step.lower():
-                diagnostic_logs.append(f"[{timestamp}] - Test port 80: OK")
-                diagnostic_logs.append(f"[{timestamp}] - Test port 443: OK")
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        diagnostic_logs.append(f"[{timestamp}] Demarrage du diagnostic pour: {app_path}")
+        
+        # Preparer l'environnement avec le chemin cible
+        env = os.environ.copy()
+        env['TARGET_APP_PATH'] = app_path
+        
+        diagnostic_logs.append(f"[{timestamp}] Lancement de main.py...")
+        
+        # Executer main.py avec capture des sorties
+        process = subprocess.Popen(
+            [sys.executable, "main.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+            bufsize=1,  # Line buffered
+            universal_newlines=True
+        )
+        
+        # Fonction pour lire stdout en temps reel
+        def read_stdout():
+            for line in iter(process.stdout.readline, ''):
+                if line.strip():
+                    timestamp = datetime.now().strftime('%H:%M:%S')
+                    diagnostic_logs.append(f"[{timestamp}] {line.strip()}")
+        
+        # Fonction pour lire stderr en temps reel
+        def read_stderr():
+            for line in iter(process.stderr.readline, ''):
+                if line.strip():
+                    timestamp = datetime.now().strftime('%H:%M:%S')
+                    diagnostic_logs.append(f"[{timestamp}] STDERR: {line.strip()}")
+        
+        # Demarrer les threads de lecture
+        stdout_thread = threading.Thread(target=read_stdout)
+        stderr_thread = threading.Thread(target=read_stderr)
+        
+        stdout_thread.start()
+        stderr_thread.start()
+        
+        # Attendre la fin du processus
+        return_code = process.wait()
+        
+        # Attendre que les threads de lecture terminent
+        stdout_thread.join()
+        stderr_thread.join()
+        
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        if return_code == 0:
+            diagnostic_logs.append(f"[{timestamp}] Diagnostic termine avec succes!")
+        else:
+            diagnostic_logs.append(f"[{timestamp}] Diagnostic termine avec code d'erreur: {return_code}")
         
     except Exception as e:
         timestamp = datetime.now().strftime('%H:%M:%S')
         diagnostic_logs.append(f"[{timestamp}] ERREUR: {str(e)}")
+        import traceback
+        diagnostic_logs.append(f"[{timestamp}] Details: {traceback.format_exc()}")
     finally:
         diagnostic_running = False
 

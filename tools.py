@@ -29,10 +29,20 @@ class ReadFile(BaseTool):
 
     def execute(self, path: str) -> str:
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            # Si c'est un chemin relatif, le résoudre depuis l'app cible
+            target_app_path = os.getenv('TARGET_APP_PATH', os.getcwd())
+            
+            if not os.path.isabs(path):
+                # Chemin relatif : le résoudre depuis l'app cible
+                full_path = os.path.join(target_app_path, path)
+            else:
+                # Chemin absolu : l'utiliser tel quel
+                full_path = path
+                
+            with open(full_path, "r", encoding="utf-8") as f:
                 return f.read()
         except FileNotFoundError:
-            return f"Fichier non trouvé: {path}"
+            return f"Fichier non trouvé: {full_path}"
         except Exception as e:
             return f"Erreur lors de la lecture du fichier: {e}"
 
@@ -62,28 +72,36 @@ class ListDirectory(BaseTool):
     
     def execute(self, path: str) -> str:
         try:
-            if not os.path.exists(path):
-                return f"Répertoire non trouvé: {path}"
+            # Si c'est un chemin relatif, le résoudre depuis l'app cible
+            target_app_path = os.getenv('TARGET_APP_PATH', os.getcwd())
             
-            if not os.path.isdir(path):
-                return f"Erreur: '{path}' n'est pas un répertoire"
+            if not os.path.isabs(path):
+                full_path = os.path.join(target_app_path, path)
+            else:
+                full_path = path
+                
+            if not os.path.exists(full_path):
+                return f"Répertoire non trouvé: {full_path}"
+            
+            if not os.path.isdir(full_path):
+                return f"Erreur: '{full_path}' n'est pas un répertoire"
             
             # this was initially for debugging purposes, but imma keep it for now
             items = []
-            for item in sorted(os.listdir(path)):
-                item_path = os.path.join(path, item)
+            for item in sorted(os.listdir(full_path)):
+                item_path = os.path.join(full_path, item)
                 if os.path.isdir(item_path):
-                    items.append(f"📁 {item}/")
+                    items.append(f"[DIR] {item}/")
                 else:
                     size = os.path.getsize(item_path)
-                    items.append(f"📄 {item} ({size} bytes)")
+                    items.append(f"[FILE] {item} ({size} bytes)")
             
             if not items:
-                return f"Répertoire vide: {path}"
+                return f"Répertoire vide: {full_path}"
             
-            return f"Contenu de '{path}':\n" + "\n".join(items)
+            return f"Contenu de '{full_path}':\n" + "\n".join(items)
         except PermissionError:
-            return f"Erreur de permissions: impossible de lire le répertoire {path}"
+            return f"Erreur de permissions: impossible de lire le répertoire {full_path}"
         except Exception as e:
             return f"Erreur lors de la lecture du répertoire: {e}"
 

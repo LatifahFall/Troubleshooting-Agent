@@ -99,9 +99,11 @@ except Exception as e:
     db_manager = None
 # ================================
 
-# Generate app ID based on the application directory
-app_id = os.path.basename(os.getcwd())  # current directory name as app ID
-# DEBUG: print the app ID pour voir si c'est bon
+# Generate app ID based on the target application directory
+target_app_path = os.getenv('TARGET_APP_PATH', os.getcwd())
+app_id = os.path.basename(target_app_path)  # target app directory name as app ID
+
+print(f"--- Target application path: {target_app_path}")
 print(f"--- Application ID: {app_id}")
 
 # Initialize a response object to collect all interpretations
