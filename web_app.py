@@ -18,8 +18,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 diagnostic_logs = []
 diagnostic_running = False
 
+# Variables globales pour le chat
+current_chat_question = None
+chat_response_received = None
+
 class DiagnosticRequest(BaseModel):
     app_path: str
+
+class ChatResponseRequest(BaseModel):
+    message: str
 
 @app.get("/")
 async def home():
@@ -64,8 +71,10 @@ async def start_diagnostic(request: DiagnosticRequest, background_tasks: Backgro
     """Demarrer un diagnostic"""
     global diagnostic_running, diagnostic_logs
     
+    # Réinitialiser l'état si nécessaire
     if diagnostic_running:
-        return JSONResponse({"error": "Un diagnostic est deja en cours"}, status_code=400)
+        diagnostic_logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] ATTENTION: Forçage du redémarrage (diagnostic précédent terminé)")
+        diagnostic_running = False
     
     diagnostic_running = True
     diagnostic_logs = [f"[{datetime.now().strftime('%H:%M:%S')}] Diagnostic demarre pour: {request.app_path}"]
@@ -74,6 +83,36 @@ async def start_diagnostic(request: DiagnosticRequest, background_tasks: Backgro
     background_tasks.add_task(run_real_diagnostic, request.app_path)
     
     return {"status": "started", "message": "Diagnostic demarre"}
+
+@app.get("/logs")
+async def get_logs():
+    return {"logs": diagnostic_logs, "running": diagnostic_running}
+
+@app.post("/chat-response")
+async def receive_chat_response(request: ChatResponseRequest):
+    global chat_response_received
+    chat_response_received = request.message
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    diagnostic_logs.append(f"[{timestamp}] CHAT: Réponse utilisateur reçue: {request.message}")
+    
+    # Écrire la réponse dans le fichier temporaire pour l'agent
+    try:
+        with open("web_chat_response.txt", "w", encoding="utf-8") as f:
+            f.write(request.message)
+        diagnostic_logs.append(f"[{timestamp}] CHAT: Réponse transmise à l'agent")
+    except Exception as e:
+        diagnostic_logs.append(f"[{timestamp}] CHAT: Erreur transmission: {e}")
+    
+    return {"status": "ok", "message": "Réponse reçue"}
+
+@app.post("/stop-diagnostic")
+async def stop_diagnostic():
+    """Arrêter le diagnostic en cours"""
+    global diagnostic_running, diagnostic_logs
+    diagnostic_running = False
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    diagnostic_logs.append(f"[{timestamp}] Diagnostic arrêté manuellement")
+    return {"status": "stopped", "message": "Diagnostic arrêté"}
 
 def run_real_diagnostic(app_path: str):
     """Executer le vrai agent de troubleshooting"""
@@ -164,15 +203,6 @@ def run_real_diagnostic(app_path: str):
         diagnostic_logs.append(f"[{timestamp}] Details: {traceback.format_exc()}")
     finally:
         diagnostic_running = False
-
-@app.get("/logs")
-async def get_logs():
-    """Recuperer les logs actuels"""
-    global diagnostic_running, diagnostic_logs
-    return {
-        "logs": diagnostic_logs,
-        "running": diagnostic_running
-    }
 
 if __name__ == "__main__":
     import uvicorn

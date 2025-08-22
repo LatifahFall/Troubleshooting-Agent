@@ -124,6 +124,9 @@ function startDiagnostic() {
         if (logsInterval) {
             clearInterval(logsInterval);
         }
+        
+        // Appeler updateLogs immédiatement puis toutes les 2 secondes
+        updateLogs();
         logsInterval = setInterval(updateLogs, 2000);
     })
     .catch(function(error) {
@@ -141,6 +144,9 @@ function updateLogs() {
         })
         .then(function(data) {
             var logsDiv = document.getElementById('logs');
+            // Vérifier s'il y a de nouveaux messages de chat
+            checkForChatMessages(data.logs);
+            
             logsDiv.innerHTML = data.logs.join('<br>');
             
             // Auto-scroll vers le bas
@@ -165,4 +171,168 @@ function resetDiagnosticButton() {
     var startBtn = document.getElementById('startBtn');
     startBtn.disabled = false;
     startBtn.textContent = 'Lancer le diagnostic';
+}
+
+// ===== FONCTIONS CHAT =====
+
+// Variables globales pour le chat
+let chatMessages = [];
+let waitingForResponse = false;
+let lastDetectedQuestion = null;
+
+// Ajouter un message au chat
+function addChatMessage(sender, message) {
+    chatMessages.push({sender: sender, message: message, timestamp: new Date()});
+    
+    const chatContainer = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = sender === 'agent' ? 'agent-message' : 'user-message';
+    
+    const timestamp = new Date().toLocaleTimeString();
+    messageDiv.innerHTML = `<strong>${sender === 'agent' ? 'Agent' : 'Vous'}:</strong> ${message} <small>(${timestamp})</small>`;
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    // Ne pas activer automatiquement ici, c'est géré dans checkForChatMessages
+}
+
+// Activer l'input du chat
+function enableChatInput() {
+    console.log('ENABLING CHAT INPUT'); // Debug
+    waitingForResponse = true;
+    document.getElementById('chatInput').disabled = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('chatInput').focus();
+    console.log('Chat input enabled, waiting for response:', waitingForResponse); // Debug
+}
+
+// FONCTION DE TEST DU CHAT
+function testChat() {
+    alert('Test chat clicked!'); 
+    
+    alert('Step 1 - About to check chatMessages');
+    
+    const chatContainer = document.getElementById('chatMessages');
+    
+    alert('Step 2 - Found chatMessages: ' + (chatContainer ? 'YES' : 'NO'));
+    
+    if (chatContainer) {
+        chatContainer.innerHTML = '<div class="agent-message"><strong>Agent:</strong> Test message direct</div>';
+        alert('Step 3 - Content added to chat area');
+    } else {
+        alert('ERROR: chatMessages not found!');
+    }
+}
+
+// Désactiver l'input du chat
+function disableChatInput() {
+    waitingForResponse = false;
+    document.getElementById('chatInput').disabled = true;
+    document.getElementById('sendBtn').disabled = true;
+    document.getElementById('chatInput').value = '';
+}
+
+// Envoyer un message dans le chat
+function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (message === '') return;
+    
+    // Ajouter le message de l'utilisateur
+    addChatMessage('user', message);
+    
+    // Envoyer au backend
+    fetch('/chat-response', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({message: message})
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Réponse envoyée au backend:', data);
+        disableChatInput();
+    })
+    .catch(error => {
+        console.error('Erreur envoi réponse:', error);
+        addChatMessage('system', 'Erreur lors de l\'envoi de la réponse');
+    });
+}
+
+// Permettre l'envoi avec Enter
+document.addEventListener('DOMContentLoaded', function() {
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+    }
+});
+
+// Fonction pour vérifier les nouveaux messages du chat (à appeler depuis updateLogs)
+function checkForChatMessages(logs) {
+    console.log('=== CHECKING CHAT MESSAGES ==='); // Debug
+    console.log('Number of logs:', logs.length); // Debug
+    
+    for (let i = 0; i < logs.length; i++) {
+        const log = logs[i];
+        console.log(`Log ${i}:`, log); // Debug
+        
+        // Chercher CHAT_QUESTION:
+        if (log.includes('CHAT_QUESTION:')) {
+            console.log('FOUND CHAT_QUESTION!'); // Debug
+            const questionMatch = log.match(/CHAT_QUESTION:\s*(.+)/);
+            if (questionMatch && questionMatch[1]) {
+                const question = questionMatch[1].trim();
+                console.log('Extracted question:', question); // Debug
+                
+                // Ajouter au chat si pas déjà présent
+                if (!chatMessages.find(msg => msg.message === question)) {
+                    console.log('Adding question to chat'); // Debug
+                    addChatMessage('agent', question);
+                    enableChatInput(); // Activer immédiatement
+                } else {
+                    console.log('Question already in chat'); // Debug
+                }
+            }
+        }
+        
+        // Chercher ATTENTE REPONSE WEB:
+        if (log.includes('ATTENTE REPONSE WEB:')) {
+            console.log('FOUND ATTENTE REPONSE WEB!'); // Debug
+            if (!waitingForResponse) {
+                console.log('Enabling chat input'); // Debug
+                enableChatInput();
+            }
+        }
+        // Ancien pattern pour compatibilité
+        else if (log.includes('AskForClarification') || log.includes('ProvideFurtherAssistance')) {
+            // Extraire la question si possible
+            try {
+                const parsed = JSON.parse(log.substring(log.indexOf('{')));
+                if (parsed.action && parsed.action.parameters && parsed.action.parameters.question) {
+                    if (!chatMessages.find(msg => msg.message === parsed.action.parameters.question)) {
+                        addChatMessage('agent', parsed.action.parameters.question);
+                    }
+                }
+            } catch (e) {
+                // Si on ne peut pas parser, chercher des patterns simples
+                if (log.includes('?')) {
+                    const questionMatch = log.match(/[^{]*\?[^}]*/);
+                    if (questionMatch) {
+                        const question = questionMatch[0].trim();
+                        if (!chatMessages.find(msg => msg.message === question)) {
+                            addChatMessage('agent', question);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

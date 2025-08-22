@@ -22,6 +22,50 @@ class BaseTool(BaseModel):
     def execute(self) -> Any:
         """Execute the tool"""
         pass
+    
+    def _wait_for_web_response(self, question: str) -> str:
+        """Attendre une réponse de l'utilisateur via l'interface web"""
+        import time
+        
+        # Écrire la question dans un fichier temporaire
+        response_file = "web_chat_response.txt"
+        question_file = "web_chat_question.txt"
+        
+        # Écrire la question
+        with open(question_file, "w", encoding="utf-8") as f:
+            f.write(question)
+        
+        # Supprimer le fichier de réponse s'il existe
+        if os.path.exists(response_file):
+            os.remove(response_file)
+        
+        print(f"ATTENTE REPONSE WEB: En attente de la réponse utilisateur...", flush=True)
+        
+        # Attendre que le fichier de réponse soit créé
+        max_wait = 300  # 5 minutes max
+        wait_time = 0
+        
+        while wait_time < max_wait:
+            if os.path.exists(response_file):
+                with open(response_file, "r", encoding="utf-8") as f:
+                    response = f.read().strip()
+                
+                # Nettoyer les fichiers temporaires
+                try:
+                    os.remove(response_file)
+                    os.remove(question_file)
+                except:
+                    pass
+                
+                print(f"REPONSE RECUE: {response}", flush=True)
+                return response
+            
+            time.sleep(1)
+            wait_time += 1
+        
+        # Timeout - réponse par défaut
+        print("TIMEOUT: Aucune réponse reçue, utilisation de la réponse par défaut", flush=True)
+        return "Continuer sans clarification supplémentaire"
 
 class ReadFile(BaseTool):
     """Read a file"""
@@ -51,13 +95,16 @@ class AskForClarification(BaseTool):
     message: str = Field(...,description="The message to ask for clarification")
 
     def execute(self, message: str) -> str:
-        # Mode web : pas d'interaction directe possible
+        # Mode web : attendre une réponse via le chat
         if os.getenv('WEB_MODE', 'false').lower() == 'true':
             print(f"\n{'*' * 20}")
-            print("DEMANDE DE CLARIFICATION (MODE WEB)")
-            print(f"Question: {message}")
-            print("Reponse automatique: Continuer le diagnostic")
-            return "Continuer le diagnostic sans clarification supplémentaire"
+            print("DEMANDE DE CLARIFICATION")
+            print(f"CHAT_QUESTION: {message}")
+            print(f"{'*' * 20}")
+            
+            # Attendre la réponse via un fichier temporaire ou polling
+            return self._wait_for_web_response(message)
+        
         
         # Mode console classique
         print(f"\n{'*' * 20}")
@@ -70,13 +117,16 @@ class ProvideFurtherAssistance(BaseTool):
     message: str = Field(...,description="The message to show to the user to provide further assistance")
 
     def execute(self, message: str) -> str:
-        # Mode web : pas d'interaction directe possible
+        # Mode web : attendre une réponse via le chat
         if os.getenv('WEB_MODE', 'false').lower() == 'true':
             print(f"\n{'*' * 20}")
-            print("ASSISTANCE SUPPLEMENTAIRE (MODE WEB)")
-            print(f"Message: {message}")
-            print("Reponse automatique: Non merci")
-            return "Non merci, le diagnostic est suffisant"
+            print("ASSISTANCE SUPPLEMENTAIRE")
+            print(f"CHAT_QUESTION: {message}")
+            print(f"{'*' * 20}")
+            
+            # Attendre la réponse via un fichier temporaire ou polling
+            return self._wait_for_web_response(message)
+        
         
         # Mode console classique
         print(f"\n{'*' * 20}")

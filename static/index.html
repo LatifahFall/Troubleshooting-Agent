@@ -40,13 +40,31 @@
                     Statut: Pret
                 </div>
                 
-                <h2>Logs du diagnostic</h2>
-                <div id="logs" class="result" style="display: block; height: 300px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">
-                    Aucun diagnostic en cours...
+                <!-- Zone divisée en deux colonnes -->
+                <div class="diagnostic-area">
+                    <div class="logs-section">
+                        <h2>Logs du diagnostic</h2>
+                        <div id="logs" class="result" style="display: block; height: 300px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">
+                            Aucun diagnostic en cours...
+                        </div>
+                    </div>
+                    
+                    <div class="chat-section">
+                        <h2>Chat Agent</h2>
+                        <div id="chatMessages" class="chat-messages">
+                            Aucune interaction pour le moment...
+                        </div>
+                        
+                        <div class="chat-input">
+                            <input type="text" id="chatInput" placeholder="Votre réponse...">
+                            <button id="sendBtn" onclick="sendChatMessage()">Envoyer</button>
+                            <button onclick="alert('Button works!'); testChat();" style="background-color: #28a745;">Test Chat</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-    <script src="/static/script.js"></script>
+    <script src="/static/script_new.js"></script>
     </body>
 </html>
