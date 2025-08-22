@@ -7,6 +7,7 @@ var logsInterval = null;
 var chatMessages = [];
 var waitingForResponse = false;
 var firstDiagnosticShown = false;
+var currentTab = 'setup';
 
 // Charger répertoire initial
 window.onload = function() {
@@ -199,6 +200,7 @@ function checkForChatMessages(logs) {
                 chatMessages.push({sender: 'agent', message: messageContent});
                 addChatMessage('agent', messageContent);
                 enableChatInput();
+                notifyChatMessage(); // Notification glow
             }
         }
         
@@ -220,6 +222,7 @@ function checkForChatMessages(logs) {
                         if (!found) {
                             chatMessages.push({sender: 'agent', message: finalMessage});
                             addChatMessage('agent', finalMessage);
+                            notifyChatMessage(); // Notification glow
                         }
                     }
                 }
@@ -277,6 +280,7 @@ function checkForChatMessages(logs) {
             if (!found) {
                 chatMessages.push({sender: 'agent', message: lastMessage});
                 addChatMessage('agent', lastMessage);
+                notifyChatMessage(); // Notification glow
             }
         }
     }
@@ -320,9 +324,62 @@ function sendChatMessage() {
     });
 }
 
-// TEST CHAT
+// ===== GESTION DES ONGLETS =====
+
+// Changer d'onglet
+function switchTab(tabName) {
+    // Retirer l'active de tous les onglets
+    var allTabs = document.querySelectorAll('.tab-btn');
+    var allPanes = document.querySelectorAll('.tab-pane');
+    
+    allTabs.forEach(function(tab) {
+        tab.classList.remove('active');
+    });
+    
+    allPanes.forEach(function(pane) {
+        pane.classList.remove('active');
+    });
+    
+    // Activer l'onglet sélectionné
+    document.getElementById('tab-' + tabName).classList.add('active');
+    document.getElementById('pane-' + tabName).classList.add('active');
+    
+    // Mettre à jour la variable globale
+    currentTab = tabName;
+    
+    // Si on va sur Chat, retirer le glow et reset les notifications
+    if (tabName === 'chat') {
+        document.getElementById('tab-chat').classList.remove('glow');
+    }
+    
+    console.log('Switched to tab:', tabName);
+}
+
+// Nouvelle fonction pour lancer diagnostic ET basculer sur Chat
+function startDiagnosticAndSwitchToChat() {
+    if (!selectedPath) {
+        alert('Veuillez sélectionner un dossier');
+        return;
+    }
+    
+    // Lancer le diagnostic (fonction existante)
+    startDiagnostic();
+    
+    // Basculer automatiquement sur l'onglet Chat
+    switchTab('chat');
+}
+
+// Fonction pour notifier un nouveau message dans le chat
+function notifyChatMessage() {
+    // Si on n'est pas sur l'onglet chat, ajouter le glow
+    if (currentTab !== 'chat') {
+        document.getElementById('tab-chat').classList.add('glow');
+    }
+}
+
+// TEST CHAT (à supprimer plus tard)
 function testChat() {
-    alert('Test: ajout message');
     addChatMessage('agent', 'Test: Avez-vous besoin d\'aide ?');
     enableChatInput();
+    notifyChatMessage(); // Test de la notification
 }

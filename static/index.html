@@ -6,62 +6,86 @@
         <link rel="stylesheet" href="/static/styles.css">
     </head>
     <body>
-        <h1>Troubleshooting Agent - Version 2</h1>
+        <h1>Troubleshooting Agent</h1>
         
-        <div class="container">
-            <!-- Sidebar avec explorateur -->
-            <div class="sidebar">
-                <h3>Explorateur de fichiers</h3>
-                
-                <div class="current-path" id="currentPath">
-                    Chargement...
-                </div>
-                
-                <button onclick="goUp()" class="secondary">Dossier parent</button>
-                <button onclick="refreshBrowser()" class="secondary">Actualiser</button>
-                
-                <div class="file-browser" id="fileBrowser">
-                    Chargement des dossiers...
-                </div>
-                
-                            <h3>Actions</h3>
-            <button onclick="selectCurrentFolder()">Selectionner ce dossier</button>
-            <button onclick="startDiagnostic()" id="startBtn">Lancer le diagnostic</button>
+        <!-- Navigation par onglets -->
+        <div class="tabs-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="switchTab('setup')" id="tab-setup">
+                     Setup
+                </button>
+                <button class="tab-btn" onclick="switchTab('chat')" id="tab-chat">
+                     Chat
+                </button>
+                <button class="tab-btn" onclick="switchTab('logs')" id="tab-logs">
+                     Logs
+                </button>
             </div>
             
-            <!-- Zone principale -->
-            <div class="main-content">
-                <h2>Dossier selectionne</h2>
-                <div id="selectedPath" class="current-path">
-                    Aucun dossier selectionne
-                </div>
+            <!-- Contenu des onglets -->
+            <div class="tabs-content">
                 
-                <div id="status" class="result" style="display: none;">
-                    Statut: Pret
-                </div>
-                
-                <!-- Zone divisée en deux colonnes -->
-                <div class="diagnostic-area">
-                    <div class="logs-section">
-                        <h2>Logs du diagnostic</h2>
-                        <div id="logs" class="result" style="display: block; height: 300px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">
-                            Aucun diagnostic en cours...
-                        </div>
-                    </div>
+                <!-- Onglet Setup -->
+                <div class="tab-pane active" id="pane-setup">
+                    <h2>Configuration du diagnostic</h2>
                     
-                    <div class="chat-section">
-                        <h2>Chat Agent</h2>
-                        <div id="chatMessages" class="chat-messages">
-                            Aucune interaction pour le moment...
+                    <div class="setup-section">
+                        <h3>Sélection du dossier à analyser</h3>
+                        
+                        <div class="current-path" id="currentPath">
+                            Chargement...
                         </div>
                         
-                        <div class="chat-input">
-                            <input type="text" id="chatInput" placeholder="Votre réponse...">
-                            <button id="sendBtn" onclick="sendChatMessage()">Envoyer</button>
-                            <button onclick="alert('Button works!'); testChat();" style="background-color: #28a745;">Test Chat</button>
+                        <div class="path-controls">
+                            <button onclick="goUp()" class="secondary">Dossier parent</button>
+                            <button onclick="refreshBrowser()" class="secondary">Actualiser</button>
+                        </div>
+                        
+                        <div class="file-browser" id="fileBrowser">
+                            Chargement des dossiers...
+                        </div>
+                        
+                        <div class="selected-folder">
+                            <h3>Dossier sélectionné</h3>
+                            <div id="selectedPath" class="current-path">
+                                Aucun dossier sélectionné
+                            </div>
+                        </div>
+                        
+                        <div class="actions">
+                            <button onclick="selectCurrentFolder()" class="primary"> Sélectionner ce dossier</button>
+                            <button onclick="startDiagnosticAndSwitchToChat()" id="startBtn" class="primary">Lancer le diagnostic</button>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Onglet Chat -->
+                <div class="tab-pane" id="pane-chat">
+                    <h2>Conversation avec l'agent</h2>
+                    
+                    <div id="status" class="result" style="display: none;">
+                        Statut: Prêt
+                    </div>
+                    
+                    <div id="chatMessages" class="chat-messages">
+                        Aucun diagnostic lancé pour le moment...
+                    </div>
+                    
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Votre réponse..." disabled>
+                        <button id="sendBtn" onclick="sendChatMessage()" disabled>Envoyer</button>
+                    </div>
+                </div>
+                
+                <!-- Onglet Logs -->
+                <div class="tab-pane" id="pane-logs">
+                    <h2>Logs techniques détaillés</h2>
+                    
+                    <div id="logs" class="logs-display">
+                        Aucun diagnostic en cours...
+                    </div>
+                </div>
+                
             </div>
         </div>
 
