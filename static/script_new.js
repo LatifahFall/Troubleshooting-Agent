@@ -12,6 +12,7 @@ var currentTab = 'setup';
 // Charger répertoire initial
 window.onload = function() {
     loadDirectory(currentPath);
+    loadAppsForFilter();
 };
 
 // Charger un répertoire
@@ -326,7 +327,208 @@ function sendChatMessage() {
 
 // ===== GESTION DES ONGLETS =====
 
-// Changer d'onglet
+// Fonction supprimée - maintenant dans la section HISTORIQUE
+
+// Nouvelle fonction pour lancer diagnostic ET basculer sur Chat
+function startDiagnosticAndSwitchToChat() {
+    if (!selectedPath) {
+        alert('Veuillez sélectionner un dossier');
+        return;
+    }
+    
+    // Lancer le diagnostic (fonction existante)
+    startDiagnostic();
+    
+    // Basculer automatiquement sur l'onglet Chat
+    switchTab('chat');
+}
+
+// Fonction pour notifier un nouveau message dans le chat
+function notifyChatMessage() {
+    // Si on n'est pas sur l'onglet chat, ajouter le glow
+    if (currentTab !== 'chat') {
+        document.getElementById('tab-chat').classList.add('glow');
+    }
+}
+
+// ===== GESTION DE L'HISTORIQUE =====
+
+// Charger les applications pour le filtre
+function loadAppsForFilter() {
+    fetch('/apps')
+        .then(response => response.json())
+        .then(data => {
+            var select = document.getElementById('appFilter');
+            
+            // Vider le select
+            select.innerHTML = '<option value="">Toutes les applications</option>';
+            
+            // Ajouter les applications
+            if (data.apps) {
+                data.apps.forEach(function(app) {
+                    var option = document.createElement('option');
+                    option.value = app;
+                    option.textContent = app;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erreur chargement apps:', error);
+        });
+}
+
+// Charger l'historique des diagnostics
+function loadHistory() {
+    var appFilter = document.getElementById('appFilter').value;
+    var url = '/history';
+    
+    if (appFilter) {
+        url += '?app_name=' + encodeURIComponent(appFilter);
+    }
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            displayHistory(data.history || []);
+        })
+        .catch(error => {
+            console.error('Erreur chargement historique:', error);
+            document.getElementById('historyList').innerHTML = 
+                '<div class="history-empty">Erreur lors du chargement de l\'historique</div>';
+        });
+}
+
+// Afficher l'historique
+function displayHistory(history) {
+    var container = document.getElementById('historyList');
+    
+    if (history.length === 0) {
+        container.innerHTML = '<div class="history-empty">Aucun diagnostic trouvé</div>';
+        return;
+    }
+    
+    var html = '';
+    history.forEach(function(item) {
+        var statusClass = item.has_final_response ? 'completed' : 'partial';
+        var statusText = item.has_final_response ? 'Complet' : 'Partiel';
+        
+        html += '<div class="history-item" onclick="viewHistoryDetails(\'' + item.id + '\')">';
+        html += '  <div class="history-header">';
+        html += '    <span class="history-app-name">' + item.app_name + '</span>';
+        html += '    <div>';
+        html += '      <span class="history-date">' + item.started_at + '</span>';
+        html += '      <span class="history-status ' + statusClass + '">' + statusText + '</span>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+// Voir les détails d'un diagnostic
+function viewHistoryDetails(sessionId) {
+    console.log('Viewing details for session:', sessionId);
+    openDiagnosticModal(sessionId);
+}
+
+// Ouvrir la modal avec les détails du diagnostic
+function openDiagnosticModal(sessionId) {
+    var modal = document.getElementById('diagnosticModal');
+    var modalBody = document.getElementById('modalBody');
+    var modalTitle = document.getElementById('modalTitle');
+    
+    // Afficher la modal
+    modal.style.display = 'block';
+    
+    // Réinitialiser le contenu
+    modalBody.innerHTML = '<div class="loading">Chargement des détails...</div>';
+    modalTitle.textContent = 'Détails du diagnostic';
+    
+    // Charger les détails
+    fetch('/history/' + sessionId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                modalBody.innerHTML = '<div class="error-message">Erreur: ' + data.error + '</div>';
+                return;
+            }
+            
+            displayDiagnosticDetails(data.details);
+        })
+        .catch(error => {
+            console.error('Erreur chargement détails:', error);
+            modalBody.innerHTML = '<div class="error-message">Erreur lors du chargement des détails</div>';
+        });
+}
+
+// Afficher les détails du diagnostic dans la modal
+function displayDiagnosticDetails(details) {
+    var modalBody = document.getElementById('modalBody');
+    var modalTitle = document.getElementById('modalTitle');
+    
+    // Mettre à jour le titre
+    modalTitle.textContent = 'Rapport - ' + details.app_name;
+    
+    var html = '<div class="report-content">';
+    
+    // En-tête du rapport
+    html += '<div class="report-header">';
+    html += '  <h1>Rapport de Troubleshooting</h1>';
+    html += '  <div class="meta">';
+    html += '    <strong>Application:</strong> ' + details.app_name + '<br>';
+    html += '    <strong>Date:</strong> ' + details.started_at + '<br>';
+    html += '    <strong>Session:</strong> ' + details.id;
+    html += '  </div>';
+    html += '</div>';
+    
+    // Contenu du diagnostic (le rapport principal)
+    if (details.diagnostic_message) {
+        html += '<div class="report-section">';
+        html += '  <h3 class="report-section-title">Analyse et Diagnostic</h3>';
+        html += '  <div class="report-section-content">';
+        html += '    ' + details.diagnostic_message;
+        html += '  </div>';
+        html += '</div>';
+    }
+    
+    // Message final si présent
+    if (details.final_response && details.final_response.message) {
+        html += '<div class="report-section">';
+        html += '  <h3 class="report-section-title">Conclusion</h3>';
+        html += '  <div class="report-section-content">';
+        html += '    ' + details.final_response.message;
+        html += '  </div>';
+        html += '</div>';
+    }
+    
+    // Pied de page
+    html += '<div class="report-footer">';
+    html += '  Rapport généré automatiquement par l\'Agent de Troubleshooting<br>';
+    html += '  Session ID: ' + details.id;
+    html += '</div>';
+    
+    html += '</div>';
+    
+    modalBody.innerHTML = html;
+}
+
+// Fermer la modal
+function closeDiagnosticModal() {
+    var modal = document.getElementById('diagnosticModal');
+    modal.style.display = 'none';
+}
+
+// Fermer la modal en cliquant à l'extérieur
+window.onclick = function(event) {
+    var modal = document.getElementById('diagnosticModal');
+    if (event.target === modal) {
+        closeDiagnosticModal();
+    }
+}
+
+// Charger l'historique quand on arrive sur l'onglet
 function switchTab(tabName) {
     // Retirer l'active de tous les onglets
     var allTabs = document.querySelectorAll('.tab-btn');
@@ -352,34 +554,10 @@ function switchTab(tabName) {
         document.getElementById('tab-chat').classList.remove('glow');
     }
     
+    // Si on va sur History, charger les données
+    if (tabName === 'history') {
+        loadHistory();
+    }
+    
     console.log('Switched to tab:', tabName);
-}
-
-// Nouvelle fonction pour lancer diagnostic ET basculer sur Chat
-function startDiagnosticAndSwitchToChat() {
-    if (!selectedPath) {
-        alert('Veuillez sélectionner un dossier');
-        return;
-    }
-    
-    // Lancer le diagnostic (fonction existante)
-    startDiagnostic();
-    
-    // Basculer automatiquement sur l'onglet Chat
-    switchTab('chat');
-}
-
-// Fonction pour notifier un nouveau message dans le chat
-function notifyChatMessage() {
-    // Si on n'est pas sur l'onglet chat, ajouter le glow
-    if (currentTab !== 'chat') {
-        document.getElementById('tab-chat').classList.add('glow');
-    }
-}
-
-// TEST CHAT (à supprimer plus tard)
-function testChat() {
-    addChatMessage('agent', 'Test: Avez-vous besoin d\'aide ?');
-    enableChatInput();
-    notifyChatMessage(); // Test de la notification
 }

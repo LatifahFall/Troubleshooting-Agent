@@ -31,3 +31,28 @@ class DatabaseManager:
             )
             db.add(session)
             db.commit()
+    
+    def get_all_sessions(self):
+        """Récupérer toutes les sessions de diagnostic"""
+        with self.SessionLocal() as db:
+            return db.query(TroubleshootingSession).order_by(TroubleshootingSession.started_at.desc()).all()
+    
+    def get_sessions_by_app(self, app_name: str):
+        """Récupérer les sessions pour une application spécifique"""
+        with self.SessionLocal() as db:
+            return db.query(TroubleshootingSession).filter(
+                TroubleshootingSession.app_name == app_name
+            ).order_by(TroubleshootingSession.started_at.desc()).all()
+    
+    def get_unique_app_names(self):
+        """Récupérer la liste unique des noms d'applications"""
+        with self.SessionLocal() as db:
+            result = db.query(TroubleshootingSession.app_name).distinct().all()
+            return [row[0] for row in result]
+    
+    def get_session_by_id(self, session_id: str):
+        """Récupérer une session spécifique par son ID"""
+        with self.SessionLocal() as db:
+            return db.query(TroubleshootingSession).filter(
+                TroubleshootingSession.id == session_id
+            ).first()

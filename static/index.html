@@ -17,8 +17,11 @@
                 <button class="tab-btn" onclick="switchTab('chat')" id="tab-chat">
                      Chat
                 </button>
-                <button class="tab-btn" onclick="switchTab('logs')" id="tab-logs">
-                     Logs
+                                <button class="tab-btn" onclick="switchTab('logs')" id="tab-logs">
+                    Logs
+                </button>
+                <button class="tab-btn" onclick="switchTab('history')" id="tab-history">
+                    History
                 </button>
             </div>
             
@@ -86,8 +89,39 @@
                     </div>
                 </div>
                 
+                <!-- Onglet History -->
+                <div class="tab-pane" id="pane-history">
+                    <h2>Historique des diagnostics</h2>
+                    
+                    <div class="history-controls">
+                        <select id="appFilter" onchange="loadHistory()">
+                            <option value="">Toutes les applications</option>
+                        </select>
+                        <button onclick="loadHistory()" class="secondary">Actualiser</button>
+                    </div>
+                    
+                    <div id="historyList" class="history-list">
+                        Chargement de l'historique...
+                    </div>
+                </div>
+                
             </div>
         </div>
+
+        <!-- Modal pour afficher les détails d'un diagnostic -->
+        <div id="diagnosticModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Détails du diagnostic</h3>
+                    <span class="modal-close" onclick="closeDiagnosticModal()">&times;</span>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <div class="loading">Chargement...</div>
+                </div>
+            </div>
+        </div>
+
+
 
     <script src="/static/script_new.js"></script>
     </body>

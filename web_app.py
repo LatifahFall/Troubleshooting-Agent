@@ -114,6 +114,78 @@ async def stop_diagnostic():
     diagnostic_logs.append(f"[{timestamp}] Diagnostic arrêté manuellement")
     return {"status": "stopped", "message": "Diagnostic arrêté"}
 
+@app.get("/history")
+async def get_history(app_name: str = None):
+    """Récupérer l'historique des diagnostics"""
+    try:
+        from database import DatabaseManager
+        
+        db_manager = DatabaseManager()
+        
+        if app_name:
+            # Filtrer par nom d'application
+            sessions = db_manager.get_sessions_by_app(app_name)
+        else:
+            # Récupérer tout l'historique
+            sessions = db_manager.get_all_sessions()
+        
+        # Formater les données pour l'affichage
+        history_data = []
+        for session in sessions:
+            history_data.append({
+                "id": session.id,
+                "app_name": session.app_name,
+                "started_at": session.started_at.strftime("%Y-%m-%d %H:%M:%S") if session.started_at else "",
+                "diagnostic_message": session.diagnostic_message[:200] + "..." if session.diagnostic_message and len(session.diagnostic_message) > 200 else session.diagnostic_message,
+                "has_final_response": bool(session.final_response)
+            })
+        
+        return {"history": history_data}
+        
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/apps")
+async def get_apps():
+    """Récupérer la liste des applications diagnostiquées"""
+    try:
+        from database import DatabaseManager
+        
+        db_manager = DatabaseManager()
+        apps = db_manager.get_unique_app_names()
+        
+        return {"apps": apps}
+        
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/history/{session_id}")
+async def get_diagnostic_details(session_id: str):
+    """Récupérer les détails complets d'un diagnostic spécifique"""
+    try:
+        from database import DatabaseManager
+        
+        db_manager = DatabaseManager()
+        session = db_manager.get_session_by_id(session_id)
+        
+        if not session:
+            return JSONResponse({"error": "Diagnostic non trouvé"}, status_code=404)
+        
+        # Formater les données complètes
+        details = {
+            "id": session.id,
+            "app_name": session.app_name,
+            "started_at": session.started_at.strftime("%Y-%m-%d %H:%M:%S") if session.started_at else "",
+            "diagnostic_message": session.diagnostic_message,
+            "final_response": session.final_response,
+            "has_final_response": bool(session.final_response)
+        }
+        
+        return {"details": details}
+        
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 def run_real_diagnostic(app_path: str):
     """Executer le vrai agent de troubleshooting"""
     global diagnostic_running, diagnostic_logs
