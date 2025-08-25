@@ -1,6 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from database import DatabaseManager
 from pydantic import BaseModel
 import os
 import time
@@ -36,7 +37,9 @@ async def home():
 async def browse_directory(path: str = "."):
     """API pour naviguer dans les dossiers"""
     try:
+        # conv chemin relatif en chemin absolu
         path = os.path.abspath(path)
+
         if not os.path.exists(path):
             return JSONResponse({"error": "Chemin inexistant"}, status_code=400)
         if not os.path.isdir(path):
@@ -86,10 +89,12 @@ async def start_diagnostic(request: DiagnosticRequest, background_tasks: Backgro
 
 @app.get("/logs")
 async def get_logs():
+    """Récupérer les logs du diagnostic"""
     return {"logs": diagnostic_logs, "running": diagnostic_running}
 
 @app.post("/chat-response")
 async def receive_chat_response(request: ChatResponseRequest):
+    """Recevoir une réponse de l'utilisateur"""
     global chat_response_received
     chat_response_received = request.message
     timestamp = datetime.now().strftime('%H:%M:%S')
@@ -118,8 +123,6 @@ async def stop_diagnostic():
 async def get_history(app_name: str = None):
     """Récupérer l'historique des diagnostics"""
     try:
-        from database import DatabaseManager
-        
         db_manager = DatabaseManager()
         
         if app_name:
@@ -197,12 +200,12 @@ def run_real_diagnostic(app_path: str):
         # Preparer l'environnement avec le chemin cible
         env = os.environ.copy()
         env['TARGET_APP_PATH'] = app_path
-        env['WEB_MODE'] = 'true'  # Activer le mode web pour éviter les input() pour le moment
+        # env['WEB_MODE'] = 'true'  # Activer le mode web pour éviter les input() pour le moment
         env['PYTHONUNBUFFERED'] = '1'  # Forcer l'affichage en temps réel
         
         diagnostic_logs.append(f"[{timestamp}] Lancement de main.py...")
-        diagnostic_logs.append(f"[{timestamp}] Repertoire de travail: {os.getcwd()}")
-        diagnostic_logs.append(f"[{timestamp}] Chemin Python: {sys.executable}")
+        # diagnostic_logs.append(f"[{timestamp}] Repertoire de travail: {os.getcwd()}")
+        # diagnostic_logs.append(f"[{timestamp}] Chemin Python: {sys.executable}")
         
         # Executer main.py avec capture des sorties
         process = subprocess.Popen(
@@ -211,7 +214,7 @@ def run_real_diagnostic(app_path: str):
             stderr=subprocess.PIPE,
             text=True,
             env=env,
-            cwd=os.getcwd(),  # S'assurer qu'on est dans le bon répertoire
+            cwd=os.getcwd(),  # S'assurer qu'on est dans le bon répertoire (courant)
             bufsize=1,  # Line buffered pour avoir les lignes immédiatement
             universal_newlines=True
         )
@@ -279,5 +282,5 @@ def run_real_diagnostic(app_path: str):
 if __name__ == "__main__":
     import uvicorn
     print("Démarrage interface web avec fichiers séparés...")
-    print("http://localhost:8000")
-    uvicorn.run("web_app:app", host="0.0.0.0", port=8000, reload=True)
+    print("http://localhost:8001")
+    uvicorn.run("web_app:app", host="0.0.0.0", port=8001, reload=True)

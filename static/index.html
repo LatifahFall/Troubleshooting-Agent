@@ -1,18 +1,28 @@
 <!DOCTYPE html>
     <html>
     <head>
-        <title>Troubleshooting Agent</title>
+        <title>TETRA - Troubleshooting Agent</title>
         <meta charset="utf-8">
         <link rel="stylesheet" href="/static/styles.css">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     </head>
     <body>
-        <h1>Troubleshooting Agent</h1>
+        <div class="cyber-grid"></div>
+        <div class="cyber-overlay"></div>
+        
+        <header class="cyber-header">
+            <div class="title-container">
+                <h1 class="cyber-title" id="tetraTitle"></h1>
+                <div class="subtitle">Your troubleshooting agent</div>
+            </div>
+            <div class="header-glow"></div>
+        </header>
         
         <!-- Navigation par onglets -->
         <div class="tabs-container">
             <div class="tabs-nav">
                 <button class="tab-btn active" onclick="switchTab('setup')" id="tab-setup">
-                     Setup
+                     Config
                 </button>
                 <button class="tab-btn" onclick="switchTab('chat')" id="tab-chat">
                      Chat
@@ -21,7 +31,7 @@
                     Logs
                 </button>
                 <button class="tab-btn" onclick="switchTab('history')" id="tab-history">
-                    History
+                    Historique
                 </button>
             </div>
             
@@ -120,9 +130,6 @@
                 </div>
             </div>
         </div>
-
-
-
     <script src="/static/script_new.js"></script>
     </body>
 </html>

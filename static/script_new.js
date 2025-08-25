@@ -1,7 +1,5 @@
-// SCRIPT SIMPLIFIÉ POUR TROUBLESHOOTING AGENT
-
 // Variables globales
-var currentPath = 'C:/Users/latif/OneDrive/Desktop';
+var currentPath = 'C:/Users';
 var selectedPath = '';
 var logsInterval = null;
 var chatMessages = [];
@@ -13,7 +11,88 @@ var currentTab = 'setup';
 window.onload = function() {
     loadDirectory(currentPath);
     loadAppsForFilter();
+    typewriterEffect('TETRA', 'tetraTitle');
+    initMatrixRain();
 };
+
+// =========== MATRIX RAIN EFFECT =========== 
+// 
+function initMatrixRain() {
+    var canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '-3';
+    canvas.style.opacity = '0.08';
+    document.body.appendChild(canvas);
+    
+    var ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    var matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
+    matrix = matrix.split("");
+    
+    var font_size = 20;
+    var columns = canvas.width / font_size;
+    
+    var drops = [];
+    for (var x = 0; x < columns; x++) {
+        drops[x] = 1;
+    }
+    
+    function draw() {
+        ctx.fillStyle = 'rgba(10, 10, 10, 0.15)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#2563eb';
+        ctx.font = font_size + 'px monospace';
+        
+        for (var i = 0; i < drops.length; i++) {
+            var text = matrix[Math.floor(Math.random() * matrix.length)];
+            ctx.fillText(text, i * font_size, drops[i] * font_size);
+            
+            if (drops[i] * font_size > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+    
+    setInterval(draw, 40);
+    
+    window.addEventListener('resize', function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        columns = canvas.width / font_size;
+        drops = [];
+        for (var x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+    });
+}
+
+// =========== TYPEWRITER EFFECT =========== 
+function typewriterEffect(text, elementId) {
+    var element = document.getElementById(elementId);
+    element.innerHTML = '';
+    var i = 0;
+    var speed = 200; // vitesse de frappe en ms
+    
+    function typeChar() {
+        if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(typeChar, speed);
+        }
+    }
+    
+    // Petit délai avant de commencer
+    setTimeout(typeChar, 800);
+}
 
 // Charger un répertoire
 function loadDirectory(path) {
@@ -347,7 +426,39 @@ function startDiagnosticAndSwitchToChat() {
 function notifyChatMessage() {
     // Si on n'est pas sur l'onglet chat, ajouter le glow
     if (currentTab !== 'chat') {
-        document.getElementById('tab-chat').classList.add('glow');
+        var chatTab = document.getElementById('tab-chat');
+        chatTab.classList.add('glow');
+        // Son désactivé pour un environnement professionnel
+        // playNotificationSound();
+        setTimeout(function() {
+            chatTab.classList.remove('glow');
+        }, 3000);
+    }
+}
+
+// =========== CYBER SOUND EFFECTS =========== 
+function playNotificationSound() {
+    // Créer un son synthétique de notification cyber
+    try {
+        var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        var oscillator = audioContext.createOscillator();
+        var gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.2);
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (e) {
+        // Ignore si l'audio n'est pas supporté
     }
 }
 
