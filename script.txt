@@ -1,0 +1,139 @@
+Slide 1 – Page de Titre (30 sec)
+
+Comme vous le savez déjà, durant ce dernier mois j'ai eu à développer un agent AI destiné au troubleshooting d'applications web. 
+
+Slide 2 – Problématique & Contexte (2 min)
+
+Le problème est simple : Un diagnostic manuel peut prendre des heures, voire des jours.L’analyse des logs exige une expertise pointue.
+Chaque développeur a sa propre méthode, ce qui crée un manque de standardisation.
+Et en cas d’incident critique, chaque minute compte.
+Imaginez une application e-commerce en panne à 2h du matin.
+L’équipe doit réagir, mais sans outils automatisés, la perte de temps est énorme et les coûts d’arrêt peuvent être catastrophiques.
+
+C’est face à ces défis que j’ai conçu Agent Tetra, qui combine l’IA et une interface moderne pour accélérer le diagnostic.
+
+Slide 3 – Solution Proposée (2 min)
+
+Troubleshooting Agent Tetra, c’est :
+Un agent IA qui pense comme un expert,
+Une interface web intuitive utilisable par tous,
+Une analyse automatique qui anticipe les problèmes.
+Avec des résultats concrets :
+Jusqu’à 80% de temps gagné sur le diagnostic,
+Une standardisation des méthodes,
+Une réactivité accrue pour limiter les pertes,
+Et surtout un soutien direct aux équipes DevOps.
+
+Slide 4 – Fonctionnalités Principales (2 min)
+L’agent propose quatre blocs majeurs :
+Analyse automatique des logs : détection intelligente des erreurs et compréhension du contexte.
+Vérifications système : monitoring des ressources, tests réseau et contrôle des services.
+Interface web interactive : navigation fluide, chat en temps réel avec l’IA et suivi visuel.
+Génération de rapports : Markdown clair, historique complet et recommandations actionnables.
+
+Slide 5 – Technologies Utilisées (2 min)
+
+Pour ça, j’ai choisi une stack adaptée :
+FastAPI : rapide, moderne, documenté automatiquement.
+Pydantic v2 : validation robuste des données.
+GPT-4 d’OpenAI : intelligence contextuelle de pointe.
+PostgreSQL : base fiable pour stocker les sessions.
+psutil : monitoring précis des ressources système.
+Cette combinaison offre performance, sécurité, intelligence et fiabilité.
+
+Slide 6 – Architecture du Système (2 min)
+
+L’architecture se compose de :
+
+Frontend : interface web moderne, navigation et chat.
+Backend : API FastAPI performante.
+IA GPT-4 : prompts dynamiques et adaptatifs.
+Outils de diagnostic : 7 modules spécialisés.
+Persistance : PostgreSQL pour l’historique.
+Intégrations externes : alertes Teams.
+Le tout repose sur une architecture modulaire et extensible avec des communications en temps réel.
+
+Slide 7 – Architecture Technique Détaillée (3 min)
+
+Sur le plan technique :
+Une classe abstraite BaseTool définit le modèle.
+7 outils héritent de cette classe : analyse de fichiers, checks systèmes, connectivité, etc.
+Un Pattern Factory gère la création dynamique.
+Des gestionnaires comme DatabaseManager, ReportManager et TroubleshootingSession assurent la persistance et la traçabilité.
+👉 Résultat : une architecture propre, maintenable et extensible.
+
+Slide 8 – Flux de Travail du Diagnostic (3 min)
+
+Le diagnostic suit 5 étapes :
+Initialisation : choix du dossier à analyser.
+Lancement automatique de l’agent.
+Analyse avec les différents outils.
+Génération du rapport et sauvegarde.
+Notification via Teams si nécessaire.
+Chaque étape est tracée, interactive et automatisée.
+
+Slide 9 – Plan de Base de Données (2 min)
+
+La base est simple et efficace :
+Une table principale pour les sessions,
+Stockage HTML pour les résultats,
+Horodatage pour la traçabilité,
+Index optimisés pour les performances.
+👉 Une structure flexible, fiable et maintenable.
+
+Slide 10 – Résultats Obtenus (2 min)
+
+À ce stade, j’ai :
+Une interface web fonctionnelle,
+Un agent IA opérationnel avec 7 outils,
+Une base PostgreSQL robuste,
+Des rapports automatiques,
+Une intégration Teams en temps réel.
+Avec des métriques claires :
+Couverture de 3 types de problèmes majeurs,
+Rapports générés en temps réel,
+Architecture modulaire avec 5 composants principaux.
+
+Slide 11 – Difficultés & Solutions (3 min)
+
+Quelques défis relevés :
+Prompts dynamiques : résolus avec Jinja2 et templates adaptatifs.
+Optimisation du prompt système : prompts courts, diagnostics précis.
+Interface temps réel : résolue avec fichiers temporaires et polling intelligent.
+Validation complexe des données : solution via Pydantic et classes abstraites.
+Modularité des outils : gérée avec une Factory Pattern dynamique.
+👉 Chaque difficulté a renforcé la robustesse du projet.
+
+Slide 12 – Perspectives (2 min)
+
+Les évolutions prévues :
+Intégrations avancées : Kubernetes, Prometheus, Grafana.
+IA plus intelligente : apprentissage des sessions passées, prévention proactive.
+Nouvelles fonctionnalités : dashboard, API complète, multi-utilisateurs.
+Déploiement industrialisé : Docker, Kubernetes, CI/CD.
+L’impact attendu : gain massif de temps, satisfaction accrue et standardisation du troubleshooting.
+
+Slide 13 à 17 – Annexes (4 min)
+
+J’ai préparé 4 annexes techniques :
+Architecture Globale,
+Diagramme de Séquence détaillé,
+Communication Temps Réel,
+Stack complet des technologies.
+Ces annexes permettent de plonger plus en profondeur dans les aspects techniques.
+
+Conclusion (1 min)
+
+En résumé, Troubleshooting Agent Tetra démontre :
+La puissance de l’IA appliquée au diagnostic IT,
+L’importance d’une architecture modulaire,
+Et l’impact concret en termes de productivité et de fiabilité.
+👉 Ce projet ouvre la voie à l’automatisation intelligente du troubleshooting.
+
+Questions & Discussion (3-5 min)
+
+Je suis ouverte à vos questions, notamment sur :
+La sécurité des données et la gestion des API keys,
+Le coût d’OpenAI et l’optimisation des prompts,
+La scalabilité et les perspectives DevOps,
+Ou encore la maintenance et le support.
